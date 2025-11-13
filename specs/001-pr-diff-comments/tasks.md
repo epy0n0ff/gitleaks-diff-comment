@@ -129,14 +129,14 @@ Custom GitHub Action structure:
 
 ### Implementation for User Story 4
 
-- [ ] T042 [US4] Configure action.yml runs section to use Docker image ('docker', 'Dockerfile')
-- [ ] T043 [US4] Add PR event triggers in action.yml (pull_request types: opened, synchronize, reopened)
-- [ ] T044 [US4] Add paths filter for .gitleaksignore in action.yml (only trigger when .gitleaksignore changes)
-- [ ] T045 [US4] Set required permissions in action.yml (pull-requests: write, contents: read)
-- [ ] T046 [US4] Complete Dockerfile ENTRYPOINT configuration to call /usr/local/bin/pr-diff-comment binary
-- [ ] T047 [US4] Add environment variable mapping in main.go (INPUT_GITHUB-TOKEN, INPUT_PR-NUMBER, GITHUB_REPOSITORY, etc.)
-- [ ] T048 [US4] Implement workflow validation in main.go (check if running in GitHub Actions environment)
-- [ ] T049 [US4] Add build optimization flags to Dockerfile (-ldflags="-w -s" for binary size reduction)
+- [X] T042 [US4] Configure action.yml runs section to use Docker image ('docker', 'Dockerfile')
+- [X] T043 [US4] Add PR event triggers in action.yml (pull_request types: opened, synchronize, reopened)
+- [X] T044 [US4] Add paths filter for .gitleaksignore in action.yml (only trigger when .gitleaksignore changes)
+- [X] T045 [US4] Set required permissions in action.yml (pull-requests: write, contents: read)
+- [X] T046 [US4] Complete Dockerfile ENTRYPOINT configuration to call /usr/local/bin/pr-diff-comment binary
+- [X] T047 [US4] Add environment variable mapping in main.go (INPUT_GITHUB-TOKEN, INPUT_PR-NUMBER, GITHUB_REPOSITORY, etc.)
+- [X] T048 [US4] Implement workflow validation in main.go (check if running in GitHub Actions environment)
+- [X] T049 [US4] Add build optimization flags to Dockerfile (-ldflags="-w -s" for binary size reduction)
 
 **Checkpoint**: Action is fully integrated and triggers automatically on PR events
 

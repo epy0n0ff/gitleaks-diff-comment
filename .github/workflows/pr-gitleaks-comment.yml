@@ -1,0 +1,31 @@
+name: PR Gitleaks Comment
+
+# Trigger on pull request events when .gitleaksignore changes
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.gitleaksignore'
+
+# Required permissions for the action
+permissions:
+  pull-requests: write  # Required to post comments on PRs
+  contents: read        # Required to checkout and read repository files
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    name: Comment on .gitleaksignore changes
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for diff comparison
+
+      - name: Comment on .gitleaksignore changes
+        uses: ./
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-number: ${{ github.event.pull_request.number }}
+          debug: 'false'
