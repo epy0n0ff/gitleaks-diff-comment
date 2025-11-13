@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pr-gitleaks-commenter/pr-diff-comment/internal/comment"
-	"github.com/pr-gitleaks-commenter/pr-diff-comment/internal/diff"
+	"github.com/epy0n0ff/gitleaks-diff-comment/internal/comment"
+	"github.com/epy0n0ff/gitleaks-diff-comment/internal/diff"
 )
 
 // MockClient is a mock implementation of the GitHub Client interface

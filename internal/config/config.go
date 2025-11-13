@@ -71,19 +71,29 @@ func ParseFromEnv() (*Config, error) {
 // Validate checks if the configuration is valid
 func Validate(c *Config) error {
 	if c.GitHubToken == "" {
-		return errors.New("GitHub token is required (INPUT_GITHUB-TOKEN)")
+		return errors.New("GitHub token is required (INPUT_GITHUB-TOKEN)\n" +
+			"  → Action: Set 'github-token' input in your workflow file\n" +
+			"  → Example: github-token: ${{ secrets.GITHUB_TOKEN }}")
 	}
 	if c.PRNumber <= 0 {
-		return errors.New("PR number must be positive (INPUT_PR-NUMBER)")
+		return errors.New("PR number must be positive (INPUT_PR-NUMBER)\n" +
+			"  → Action: Set 'pr-number' input in your workflow file\n" +
+			"  → Example: pr-number: ${{ github.event.pull_request.number }}")
 	}
 	if c.Repository == "" {
-		return errors.New("repository is required (GITHUB_REPOSITORY)")
+		return errors.New("repository is required (GITHUB_REPOSITORY)\n" +
+			"  → Action: This is automatically set by GitHub Actions\n" +
+			"  → Ensure the action is running in a GitHub Actions workflow")
 	}
 	if !strings.Contains(c.Repository, "/") {
-		return errors.New("repository must be in format owner/repo")
+		return fmt.Errorf("repository must be in format owner/repo, got: %s\n"+
+			"  → Action: Check GITHUB_REPOSITORY environment variable\n"+
+			"  → Expected format: owner/repository-name", c.Repository)
 	}
 	if c.CommitSHA == "" {
-		return errors.New("commit SHA is required (GITHUB_SHA)")
+		return errors.New("commit SHA is required (GITHUB_SHA)\n" +
+			"  → Action: This is automatically set by GitHub Actions\n" +
+			"  → Ensure the action is running in a GitHub Actions workflow")
 	}
 	return nil
 }

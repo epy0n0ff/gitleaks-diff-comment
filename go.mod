@@ -1,4 +1,4 @@
-module github.com/pr-gitleaks-commenter/pr-diff-comment
+module github.com/epy0n0ff/gitleaks-diff-comment
 
 go 1.21
 

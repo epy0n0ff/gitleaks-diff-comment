@@ -1,6 +1,6 @@
 package comment
 
-import "github.com/pr-gitleaks-commenter/pr-diff-comment/internal/diff"
+import "github.com/epy0n0ff/gitleaks-diff-comment/internal/diff"
 
 // GeneratedComment represents a comment ready to be posted to GitHub
 type GeneratedComment struct {

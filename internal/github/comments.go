@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pr-gitleaks-commenter/pr-diff-comment/internal/comment"
+	"github.com/epy0n0ff/gitleaks-diff-comment/internal/comment"
 )
 
 // PostComments posts multiple comments concurrently with rate limiting and deduplication

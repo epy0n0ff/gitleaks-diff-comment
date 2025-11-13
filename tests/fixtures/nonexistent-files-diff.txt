@@ -1,0 +1,10 @@
+diff --git a/.gitleaksignore b/.gitleaksignore
+index abc123..def456 100644
+--- a/.gitleaksignore
++++ b/.gitleaksignore
+@@ -1,0 +2,5 @@
++nonexistent/file1.txt
++does-not-exist/secret.yml:42
++missing/*.env
++phantom/directory/data.json
++imaginary-file.key

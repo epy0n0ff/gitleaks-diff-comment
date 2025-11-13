@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/pr-gitleaks-commenter/pr-diff-comment/internal/config"
+	"github.com/epy0n0ff/gitleaks-diff-comment/internal/config"
 )
 
 // TestGitHubActionsEnvironment validates that required environment variables

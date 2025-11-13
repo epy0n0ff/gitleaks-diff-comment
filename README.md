@@ -118,6 +118,100 @@ If rate limits persist, the action fails gracefully without blocking the PR work
 - No command injection vulnerabilities
 - Minimal Alpine-based Docker image
 
+## Troubleshooting
+
+### Common Issues
+
+#### Action not triggering
+
+**Symptom**: Workflow doesn't run when .gitleaksignore is modified
+
+**Solutions**:
+- Verify the workflow file is in `.github/workflows/` directory
+- Check that `paths` filter includes `.gitleaksignore`
+- Ensure PR events are configured: `[opened, synchronize, reopened]`
+- Verify workflow file has correct YAML syntax
+
+#### Permission denied errors
+
+**Symptom**: Error: "Resource not accessible by integration"
+
+**Solutions**:
+- Add required permissions to workflow:
+  ```yaml
+  permissions:
+    pull-requests: write
+    contents: read
+  ```
+- Verify repository settings allow GitHub Actions to create comments
+- Check that `GITHUB_TOKEN` has sufficient permissions
+
+#### Rate limit errors
+
+**Symptom**: "rate limit exceeded" in action logs
+
+**Solutions**:
+- Action automatically retries with exponential backoff (1s, 2s, 4s)
+- For large PRs (50+ changes), the action processes them in batches
+- If rate limits persist, reduce PR size or wait for rate limit reset
+- Monitor: The action logs rate limit status when debug mode is enabled
+
+#### Comments not appearing
+
+**Symptom**: Action runs successfully but no comments visible
+
+**Solutions**:
+- Check that .gitleaksignore actually changed in the PR diff
+- Verify comments aren't being deduplicated (check action logs)
+- Ensure `fetch-depth: 0` is set in checkout step for full git history
+- Confirm PR is not in draft mode (comments may be hidden)
+
+#### Invalid configuration errors
+
+**Symptom**: "GitHub token is required" or similar validation errors
+
+**Solutions**:
+- Ensure `github-token` input is set: `${{ secrets.GITHUB_TOKEN }}`
+- Verify `pr-number` input: `${{ github.event.pull_request.number }}`
+- Check that action is running in pull_request event context
+- Review error message for specific guidance on missing configuration
+
+#### Docker build failures
+
+**Symptom**: Action fails during Docker build step
+
+**Solutions**:
+- Verify go.mod and go.sum are present and valid
+- Check that all source files are committed
+- Ensure Dockerfile is not corrupted
+- Review build logs for specific Go compilation errors
+
+### Debug Mode
+
+Enable debug logging for detailed troubleshooting:
+
+```yaml
+- uses: ./
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    pr-number: ${{ github.event.pull_request.number }}
+    debug: 'true'  # Enable debug logging
+```
+
+Debug mode provides:
+- Configuration details
+- Rate limit status
+- Per-comment processing logs
+- Retry attempt information
+- Progress updates for large batches
+
+### Getting Help
+
+1. Check the [DEVELOPMENT.md](./DEVELOPMENT.md) for local testing
+2. Review action logs in the Actions tab
+3. Enable debug mode for detailed information
+4. Open an issue with logs and workflow configuration
+
 ## Contributing
 
 See [DEVELOPMENT.md](./DEVELOPMENT.md) for local development instructions.

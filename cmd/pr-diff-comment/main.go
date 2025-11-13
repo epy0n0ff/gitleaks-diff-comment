@@ -7,10 +7,10 @@ import (
 	"log"
 	"os"
 
-	"github.com/pr-gitleaks-commenter/pr-diff-comment/internal/comment"
-	"github.com/pr-gitleaks-commenter/pr-diff-comment/internal/config"
-	"github.com/pr-gitleaks-commenter/pr-diff-comment/internal/diff"
-	"github.com/pr-gitleaks-commenter/pr-diff-comment/internal/github"
+	"github.com/epy0n0ff/gitleaks-diff-comment/internal/comment"
+	"github.com/epy0n0ff/gitleaks-diff-comment/internal/config"
+	"github.com/epy0n0ff/gitleaks-diff-comment/internal/diff"
+	"github.com/epy0n0ff/gitleaks-diff-comment/internal/github"
 )
 
 func main() {

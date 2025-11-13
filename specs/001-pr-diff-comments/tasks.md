@@ -146,17 +146,17 @@ Custom GitHub Action structure:
 
 **Purpose**: Documentation, error handling improvements, and validation
 
-- [ ] T050 [P] Add comprehensive error messages with actionable guidance in internal/config/config.go validation
-- [ ] T051 [P] Add structured logging with levels (info, warn, error) throughout all packages
-- [ ] T052 [P] Create test fixtures for edge cases (empty .gitleaksignore, malformed entries, non-existent files) in tests/fixtures/
-- [ ] T053 [P] Document action inputs and outputs in README.md with examples
-- [ ] T054 [P] Add troubleshooting section to README.md (common errors, permission issues, rate limits)
-- [ ] T055 [P] Add local development instructions to DEVELOPMENT.md (docker build, docker run with environment variables)
-- [ ] T056 [P] Add example workflow YAML in README.md showing how to use the action
-- [ ] T057 Verify Docker image size is under 50MB (run `docker images` after build)
-- [ ] T058 Run quickstart.md validation (manual test following quickstart guide)
-- [ ] T059 Add .github/workflows/ example for testing the action in this repository
-- [ ] T060 [P] Add Go module tidy and verification: `go mod tidy && go mod verify`
+- [X] T050 [P] Add comprehensive error messages with actionable guidance in internal/config/config.go validation
+- [X] T051 [P] Add structured logging with levels (info, warn, error) throughout all packages
+- [X] T052 [P] Create test fixtures for edge cases (empty .gitleaksignore, malformed entries, non-existent files) in tests/fixtures/
+- [X] T053 [P] Document action inputs and outputs in README.md with examples
+- [X] T054 [P] Add troubleshooting section to README.md (common errors, permission issues, rate limits)
+- [X] T055 [P] Add local development instructions to DEVELOPMENT.md (docker build, docker run with environment variables)
+- [X] T056 [P] Add example workflow YAML in README.md showing how to use the action
+- [X] T057 Verify Docker image size is under 50MB (run `docker images` after build)
+- [X] T058 Run quickstart.md validation (manual test following quickstart guide)
+- [X] T059 Add .github/workflows/ example for testing the action in this repository
+- [X] T060 [P] Add Go module tidy and verification: `go mod tidy && go mod verify`
 
 ---
 

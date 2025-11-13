@@ -7,7 +7,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/pr-gitleaks-commenter/pr-diff-comment/internal/diff"
+	"github.com/epy0n0ff/gitleaks-diff-comment/internal/diff"
 )
 
 //go:embed templates/addition.md

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pr-gitleaks-commenter/pr-diff-comment/internal/diff"
+	"github.com/epy0n0ff/gitleaks-diff-comment/internal/diff"
 )
 
 func TestNewGeneratedComment_WithLineNumber(t *testing.T) {
