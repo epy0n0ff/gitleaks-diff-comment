@@ -1,0 +1,101 @@
+# GitHub Actions Workflow Contract
+# Feature: pr-gitleaks-comments
+# Version: 1.0.0
+
+workflow:
+  name: "PR Gitleaks Comment Generator"
+  description: "Automatically add explanatory comments to PRs when .gitleaksignore is modified"
+
+  triggers:
+    pull_request:
+      types:
+        - opened
+        - synchronize
+        - reopened
+      paths:
+        - ".gitleaksignore"
+
+  permissions:
+    pull-requests: write  # Required to post comments
+    contents: read        # Required to checkout and read files
+
+  inputs:
+    # All inputs come from GitHub context, no manual inputs required
+    environment_variables:
+      GITHUB_TOKEN:
+        required: true
+        description: "GitHub token for API authentication"
+        source: "${{ secrets.GITHUB_TOKEN }}"
+
+      GITHUB_REPOSITORY:
+        required: true
+        description: "Repository in format owner/repo"
+        source: "${{ github.repository }}"
+
+      GITHUB_SHA:
+        required: true
+        description: "Commit SHA that triggered the workflow"
+        source: "${{ github.sha }}"
+
+      PR_NUMBER:
+        required: true
+        description: "Pull request number"
+        source: "${{ github.event.pull_request.number }}"
+
+      BASE_REF:
+        required: true
+        description: "Base branch reference"
+        source: "${{ github.event.pull_request.base.ref }}"
+
+      HEAD_REF:
+        required: true
+        description: "Head branch reference"
+        source: "${{ github.event.pull_request.head.ref }}"
+
+  outputs:
+    comments_posted:
+      type: integer
+      description: "Number of comments successfully posted to the PR"
+
+    skipped_duplicates:
+      type: integer
+      description: "Number of comments skipped due to duplication"
+
+    errors_encountered:
+      type: integer
+      description: "Number of errors during processing"
+
+  exit_codes:
+    0: "Success - comments posted or no action needed"
+    1: "Error - general failure"
+    2: "Error - missing required environment variables"
+    3: "Error - git operations failed"
+    4: "Error - GitHub API failure"
+
+  job_steps:
+    - name: "Checkout repository"
+      uses: "actions/checkout@v4"
+      with:
+        fetch-depth: 0  # Need full history for diff
+
+    - name: "Setup environment"
+      shell: "bash"
+      script: "scripts/pr-diff-comment/setup.sh"
+
+    - name: "Parse .gitleaksignore diff"
+      shell: "bash"
+      script: "scripts/pr-diff-comment/parse-gitleaks-diff.sh"
+
+    - name: "Generate comments"
+      shell: "bash"
+      script: "scripts/pr-diff-comment/generate-comment.sh"
+
+    - name: "Post comments to PR"
+      shell: "bash"
+      script: "scripts/pr-diff-comment/post-comment.sh"
+
+  artifacts:
+    logs:
+      path: "/tmp/pr-comment-workflow.log"
+      retention_days: 7
+      on_failure: true

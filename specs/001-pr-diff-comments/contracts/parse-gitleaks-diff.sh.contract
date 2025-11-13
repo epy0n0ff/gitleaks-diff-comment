@@ -1,0 +1,107 @@
+#!/bin/bash
+# Script Contract: parse-gitleaks-diff.sh
+# Purpose: Extract changed lines from .gitleaksignore diff
+# Version: 1.0.0
+
+## INPUTS
+
+# Environment Variables (Required)
+# - BASE_REF: Base branch for diff comparison (e.g., "main")
+# - HEAD_REF: Head branch for diff comparison (e.g., "feature/update-ignore")
+
+# Working Directory Assumptions
+# - Must be run from repository root
+# - Repository must be cloned with full git history
+
+## OUTPUTS
+
+# stdout: JSON array of diff changes
+# Format:
+# [
+#   {
+#     "file": ".gitleaksignore",
+#     "operation": "+",  // "+" for addition, "-" for deletion
+#     "line_number": 10,
+#     "content": "config/secrets.yml:42",
+#     "position": 1  // Position in diff for comment placement
+#   },
+#   ...
+# ]
+
+# stderr: Error messages and warnings
+# - Empty if successful
+# - Contains error description if failed
+
+## EXIT CODES
+
+# 0: Success - diff parsed (may be empty array if no changes)
+# 1: General error (git command failed, invalid ref, etc.)
+# 2: Repository not initialized or invalid working directory
+# 3: .gitleaksignore file format error
+
+## BEHAVIOR
+
+# 1. Validates environment variables are set
+# 2. Checks if .gitleaksignore exists in either BASE or HEAD
+# 3. Runs git diff between BASE_REF and HEAD_REF for .gitleaksignore
+# 4. Parses diff output to extract:
+#    - Added lines (starting with +)
+#    - Removed lines (starting with -)
+#    - Line numbers from hunk headers (@@ -x,y +a,b @@)
+#    - Diff positions for comment placement
+# 5. Outputs JSON to stdout
+# 6. Exits with appropriate code
+
+## EDGE CASES
+
+# - .gitleaksignore doesn't exist in base: Report all lines as additions
+# - .gitleaksignore doesn't exist in head: Report all lines as deletions
+# - .gitleaksignore is new file: Report all lines as additions
+# - Empty .gitleaksignore: Output empty array
+# - No changes to .gitleaksignore: Output empty array
+# - Malformed lines in .gitleaksignore: Include in output (validation happens downstream)
+
+## DEPENDENCIES
+
+# - git (version 2.x+)
+# - jq (version 1.6+)
+# - bash (version 4.0+)
+# - awk, grep, sed (standard Unix tools)
+
+## EXAMPLE USAGE
+
+# export BASE_REF="origin/main"
+# export HEAD_REF="HEAD"
+# ./parse-gitleaks-diff.sh > changes.json
+
+## EXAMPLE OUTPUT
+
+# [
+#   {
+#     "file": ".gitleaksignore",
+#     "operation": "+",
+#     "line_number": 6,
+#     "content": "database/credentials.json:23",
+#     "position": 1
+#   },
+#   {
+#     "file": ".gitleaksignore",
+#     "operation": "-",
+#     "line_number": 10,
+#     "content": "old-config/*.env",
+#     "position": 2
+#   }
+# ]
+
+## TESTING HOOKS
+
+# For unit testing, set:
+# - MOCK_GIT_DIFF: If set, read diff from this file instead of running git
+# - DRY_RUN: If set, print commands instead of executing
+
+## SECURITY CONSIDERATIONS
+
+# - Does not execute any content from .gitleaksignore
+# - Quotes all shell variables to prevent injection
+# - Uses jq for safe JSON generation
+# - Limits line length processing to 4096 characters
