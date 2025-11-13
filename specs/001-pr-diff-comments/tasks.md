@@ -27,13 +27,13 @@ Custom GitHub Action structure:
 
 **Purpose**: Initialize Go project structure and Docker configuration
 
-- [ ] T001 Initialize Go module with `go mod init` in repository root (go.mod, go.sum)
-- [ ] T002 [P] Create directory structure: cmd/pr-diff-comment/, internal/{diff,comment,github,config}/, tests/{fixtures,integration}/
-- [ ] T003 [P] Create action.yml with action metadata (name, description, inputs, runs configuration)
-- [ ] T004 [P] Create Dockerfile with multi-stage build (golang:1.21-alpine builder + alpine:3.18 runtime)
-- [ ] T005 [P] Create .gitignore for Go project (binaries, vendor/, coverage files)
-- [ ] T006 [P] Create README.md with action usage instructions and examples
-- [ ] T007 [P] Create DEVELOPMENT.md with local development setup and testing guide
+- [X] T001 Initialize Go module with `go mod init` in repository root (go.mod, go.sum)
+- [X] T002 [P] Create directory structure: cmd/pr-diff-comment/, internal/{diff,comment,github,config}/, tests/{fixtures,integration}/
+- [X] T003 [P] Create action.yml with action metadata (name, description, inputs, runs configuration)
+- [X] T004 [P] Create Dockerfile with multi-stage build (golang:1.21-alpine builder + alpine:3.18 runtime)
+- [X] T005 [P] Create .gitignore for Go project (binaries, vendor/, coverage files)
+- [X] T006 [P] Create README.md with action usage instructions and examples
+- [X] T007 [P] Create DEVELOPMENT.md with local development setup and testing guide
 
 ---
 
@@ -43,16 +43,16 @@ Custom GitHub Action structure:
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T008 Create Config struct and parsing logic in internal/config/config.go (parse action inputs from environment)
-- [ ] T009 [P] Create DiffChange and OperationType types in internal/diff/types.go
-- [ ] T010 [P] Create GitleaksEntry struct in internal/diff/types.go
-- [ ] T011 [P] Create GitHub Client interface in internal/github/client.go
-- [ ] T012 [P] Create CommentData and GeneratedComment structs in internal/comment/types.go
-- [ ] T013 [P] Create GitHub API types (PostCommentRequest, PostCommentResponse, ExistingComment, CommentResult, ActionOutput) in internal/github/types.go
-- [ ] T014 Add go-github dependency: `go get github.com/google/go-github/v57@latest`
-- [ ] T015 [P] Add oauth2 dependency: `go get golang.org/x/oauth2@latest`
-- [ ] T016 Create markdown comment templates (templates/addition.md, templates/deletion.md) with emoji indicators
-- [ ] T017 Implement ClientImpl NewClient function in internal/github/client.go (GitHub API client initialization with oauth2)
+- [X] T008 Create Config struct and parsing logic in internal/config/config.go (parse action inputs from environment)
+- [X] T009 [P] Create DiffChange and OperationType types in internal/diff/types.go
+- [X] T010 [P] Create GitleaksEntry struct in internal/diff/types.go
+- [X] T011 [P] Create GitHub Client interface in internal/github/client.go
+- [X] T012 [P] Create CommentData and GeneratedComment structs in internal/comment/types.go
+- [X] T013 [P] Create GitHub API types (PostCommentRequest, PostCommentResponse, ExistingComment, CommentResult, ActionOutput) in internal/github/types.go
+- [X] T014 Add go-github dependency: `go get github.com/google/go-github/v57@latest`
+- [X] T015 [P] Add oauth2 dependency: `go get golang.org/x/oauth2@latest`
+- [X] T016 Create markdown comment templates (templates/addition.md, templates/deletion.md) with emoji indicators
+- [X] T017 Implement ClientImpl NewClient function in internal/github/client.go (GitHub API client initialization with oauth2)
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -66,18 +66,18 @@ Custom GitHub Action structure:
 
 ### Implementation for User Story 1
 
-- [ ] T018 [P] [US1] Implement ParseGitleaksDiff function in internal/diff/parser.go (parse git diff output for .gitleaksignore)
-- [ ] T019 [P] [US1] Implement ParseGitleaksEntry function in internal/diff/parser.go (extract file pattern and line number from entry)
-- [ ] T020 [P] [US1] Implement FileLink method on GitleaksEntry in internal/diff/types.go (generate GitHub file URLs)
-- [ ] T021 [US1] Implement template rendering in internal/comment/generator.go (use text/template with embedded templates)
-- [ ] T022 [US1] Implement NewGeneratedComment function in internal/comment/generator.go (create comment from DiffChange)
-- [ ] T023 [US1] Implement CreateReviewComment method in internal/github/comments.go (post line-level review comments via go-github)
-- [ ] T024 [US1] Implement ListReviewComments method in internal/github/comments.go (fetch existing comments for deduplication)
-- [ ] T025 [US1] Implement deduplication logic in internal/github/comments.go (check if identical comment exists before posting)
-- [ ] T026 [US1] Create main.go entry point in cmd/pr-diff-comment/main.go (parse config, call diff parser, generate comments, post via GitHub client)
-- [ ] T027 [US1] Add error handling and logging throughout the pipeline (config validation, diff parsing errors, API failures)
-- [ ] T028 [US1] Create sample-diff.txt and sample-gitleaksignore fixtures in tests/fixtures/ for testing
-- [ ] T029 [US1] Update action.yml with required inputs (github-token, pr-number) and environment variables mapping
+- [X] T018 [P] [US1] Implement ParseGitleaksDiff function in internal/diff/parser.go (parse git diff output for .gitleaksignore)
+- [X] T019 [P] [US1] Implement ParseGitleaksEntry function in internal/diff/parser.go (extract file pattern and line number from entry)
+- [X] T020 [P] [US1] Implement FileLink method on GitleaksEntry in internal/diff/types.go (generate GitHub file URLs)
+- [X] T021 [US1] Implement template rendering in internal/comment/generator.go (use text/template with embedded templates)
+- [X] T022 [US1] Implement NewGeneratedComment function in internal/comment/generator.go (create comment from DiffChange)
+- [X] T023 [US1] Implement CreateReviewComment method in internal/github/comments.go (post line-level review comments via go-github)
+- [X] T024 [US1] Implement ListReviewComments method in internal/github/comments.go (fetch existing comments for deduplication)
+- [X] T025 [US1] Implement deduplication logic in internal/github/comments.go (check if identical comment exists before posting)
+- [X] T026 [US1] Create main.go entry point in cmd/pr-diff-comment/main.go (parse config, call diff parser, generate comments, post via GitHub client)
+- [X] T027 [US1] Add error handling and logging throughout the pipeline (config validation, diff parsing errors, API failures)
+- [X] T028 [US1] Create sample-diff.txt and sample-gitleaksignore fixtures in tests/fixtures/ for testing
+- [X] T029 [US1] Update action.yml with required inputs (github-token, pr-number) and environment variables mapping
 
 **Checkpoint**: At this point, User Story 1 should be fully functional - basic .gitleaksignore commenting works
 

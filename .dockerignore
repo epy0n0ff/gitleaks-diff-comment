@@ -1,0 +1,59 @@
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+DEVELOPMENT.md
+*.md
+docs/
+
+# Specs and planning
+specs/
+.specify/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.circleci/
+
+# Test files and fixtures (we'll copy only what's needed)
+tests/
+*_test.go
+*.test
+coverage.*
+
+# Build artifacts
+dist/
+build/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Dependencies (will be downloaded in Docker)
+vendor/
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# DevContainer
+.devcontainer/
