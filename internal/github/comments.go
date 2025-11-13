@@ -94,10 +94,29 @@ func postCommentsConcurrently(ctx context.Context, client Client, comments []*co
 		close(resultChan)
 	}()
 
-	// Collect results
+	// Collect results with progress logging for large batches
 	var results []CommentResult
+	totalComments := len(comments)
+	processedCount := 0
+	postedCount := 0
+
 	for result := range resultChan {
 		results = append(results, result)
+		processedCount++
+
+		if result.Status == "posted" {
+			postedCount++
+		}
+
+		// Log progress every 10 comments for large batches (20+ comments)
+		if totalComments >= 20 && processedCount%10 == 0 {
+			log.Printf("Progress: %d/%d comments processed, %d posted", processedCount, totalComments, postedCount)
+		}
+	}
+
+	// Final progress log for large batches
+	if totalComments >= 20 {
+		log.Printf("Completed: %d/%d comments processed, %d posted", processedCount, totalComments, postedCount)
 	}
 
 	return results

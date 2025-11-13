@@ -110,12 +110,12 @@ Custom GitHub Action structure:
 
 ### Implementation for User Story 3
 
-- [ ] T036 [P] [US3] Implement concurrent comment posting with goroutines in internal/github/comments.go (use sync.WaitGroup and semaphore pattern)
-- [ ] T037 [P] [US3] Add rate limit checking in internal/github/client.go (check remaining API calls before posting)
-- [ ] T038 [US3] Implement exponential backoff retry logic in internal/github/comments.go (1s, 2s, 4s delays for rate limit errors)
-- [ ] T039 [US3] Add semaphore to limit concurrent API requests to 5 in internal/github/comments.go (prevent overwhelming GitHub API)
-- [ ] T040 [US3] Add progress logging for large batches in cmd/pr-diff-comment/main.go (log every 10 comments posted)
-- [ ] T041 [US3] Implement graceful failure after 3 retry attempts in internal/github/comments.go (log error, continue with remaining comments)
+- [X] T036 [P] [US3] Implement concurrent comment posting with goroutines in internal/github/comments.go (use sync.WaitGroup and semaphore pattern)
+- [X] T037 [P] [US3] Add rate limit checking in internal/github/client.go (check remaining API calls before posting)
+- [X] T038 [US3] Implement exponential backoff retry logic in internal/github/comments.go (1s, 2s, 4s delays for rate limit errors)
+- [X] T039 [US3] Add semaphore to limit concurrent API requests to 5 in internal/github/comments.go (prevent overwhelming GitHub API)
+- [X] T040 [US3] Add progress logging for large batches in cmd/pr-diff-comment/main.go (log every 10 comments posted)
+- [X] T041 [US3] Implement graceful failure after 3 retry attempts in internal/github/comments.go (log error, continue with remaining comments)
 
 **Checkpoint**: System handles high-volume changes efficiently with proper rate limiting
 
