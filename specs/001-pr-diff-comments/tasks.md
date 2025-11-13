@@ -91,12 +91,12 @@ Custom GitHub Action structure:
 
 ### Implementation for User Story 2
 
-- [ ] T030 [P] [US2] Add IsPattern field detection in ParseGitleaksEntry function in internal/diff/parser.go (detect wildcards in patterns)
-- [ ] T031 [P] [US2] Add HasLineNumber field parsing in ParseGitleaksEntry function in internal/diff/parser.go (extract line number suffix)
-- [ ] T032 [US2] Update FileLink method in internal/diff/types.go to handle wildcards (link to parent directory for patterns)
-- [ ] T033 [US2] Update comment templates to include line number mention when present (templates/addition.md, templates/deletion.md)
-- [ ] T034 [US2] Update comment templates to indicate wildcard pattern matching (templates/addition.md, templates/deletion.md)
-- [ ] T035 [US2] Add validation in NewGeneratedComment to ensure proper template selection based on entry type in internal/comment/generator.go
+- [X] T030 [P] [US2] Add IsPattern field detection in ParseGitleaksEntry function in internal/diff/parser.go (detect wildcards in patterns)
+- [X] T031 [P] [US2] Add HasLineNumber field parsing in ParseGitleaksEntry function in internal/diff/parser.go (extract line number suffix)
+- [X] T032 [US2] Update FileLink method in internal/diff/types.go to handle wildcards (link to parent directory for patterns)
+- [X] T033 [US2] Update comment templates to include line number mention when present (templates/addition.md, templates/deletion.md)
+- [X] T034 [US2] Update comment templates to indicate wildcard pattern matching (templates/addition.md, templates/deletion.md)
+- [X] T035 [US2] Add validation in NewGeneratedComment to ensure proper template selection based on entry type in internal/comment/generator.go
 
 **Checkpoint**: Comments now adapt to entry types (specific files vs patterns)
 
