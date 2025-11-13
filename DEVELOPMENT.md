@@ -17,7 +17,7 @@ This guide covers local development, testing, and contributing to the PR Gitleak
 ├── Dockerfile             # Multi-stage Docker build
 ├── go.mod                 # Go module definition
 ├── cmd/
-│   └── pr-diff-comment/
+│   └── gitleaks-diff-comment/
 │       └── main.go        # Entry point
 ├── internal/
 │   ├── config/           # Configuration parsing
@@ -47,7 +47,7 @@ go mod download
 ### 3. Build the Binary
 
 ```bash
-go build -o pr-diff-comment ./cmd/pr-diff-comment
+go build -o gitleaks-diff-comment ./cmd/gitleaks-diff-comment
 ```
 
 ### 4. Run Tests
@@ -89,14 +89,14 @@ export GITHUB_HEAD_REF="feature/update-ignore"
 export GITHUB_WORKSPACE="/path/to/repo"
 
 # Run the binary
-./pr-diff-comment
+./gitleaks-diff-comment
 ```
 
 ### Option 2: Test with Docker
 
 ```bash
 # Build the Docker image
-docker build -t pr-diff-comment .
+docker build -t gitleaks-diff-comment .
 
 # Run the container
 docker run --rm \
@@ -109,7 +109,7 @@ docker run --rm \
   -e GITHUB_WORKSPACE="/github/workspace" \
   -v "$(pwd):/github/workspace" \
   -w /github/workspace \
-  pr-diff-comment
+  gitleaks-diff-comment
 ```
 
 ### Option 3: Test with act
@@ -196,7 +196,7 @@ golangci-lint run
 ### 5. Build Docker Image
 
 ```bash
-docker build -t pr-diff-comment .
+docker build -t gitleaks-diff-comment .
 ```
 
 ### 6. Commit Changes
@@ -238,7 +238,7 @@ GitHub Actions logs are available in the Actions tab of your repository.
 go install github.com/go-delve/delve/cmd/dlv@latest
 
 # Run with debugger
-dlv debug ./cmd/pr-diff-comment -- <args>
+dlv debug ./cmd/gitleaks-diff-comment -- <args>
 ```
 
 ## Testing with Real PRs
@@ -330,7 +330,7 @@ Use a personal access token with higher rate limits, or implement caching.
 
 - Open an issue on GitHub
 - Check existing issues for similar problems
-- Review the specification in `specs/001-pr-diff-comments/`
+- Review the specification in `specs/001-gitleaks-diff-comments/`
 
 ## Contributing
 

@@ -4,7 +4,7 @@
 *.dll
 *.so
 *.dylib
-/pr-diff-comment
+/gitleaks-diff-comment
 
 # Test binary, built with `go test -c`
 *.test
