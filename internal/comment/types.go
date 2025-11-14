@@ -10,7 +10,13 @@ type GeneratedComment struct {
 	// File path for the comment (always ".gitleaksignore")
 	Path string `json:"path"`
 
-	// Position in the diff (1-indexed, relative to diff output)
+	// Line number in the file (for Line-based API)
+	Line int `json:"line"`
+
+	// Side: "LEFT" (old/deleted) or "RIGHT" (new/added)
+	Side string `json:"side"`
+
+	// Position in the diff (deprecated, kept for backwards compatibility)
 	Position int `json:"position"`
 
 	// Commit ID for the comment

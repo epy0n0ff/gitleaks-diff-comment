@@ -40,9 +40,23 @@ func NewGeneratedComment(change *diff.DiffChange, repo, commitSHA string) (*Gene
 		return nil, fmt.Errorf("failed to render template: %w", err)
 	}
 
+	// Determine side based on operation
+	side := "RIGHT" // Default for additions
+	if change.Operation == diff.OperationDeletion {
+		side = "LEFT"
+	}
+
+	// Use LineNumber from the change (this is the line number in the file)
+	line := change.LineNumber
+	if line <= 0 {
+		line = 1 // Fallback to line 1 if not set
+	}
+
 	return &GeneratedComment{
 		Body:         body,
 		Path:         ".gitleaksignore",
+		Line:         line,
+		Side:         side,
 		Position:     change.Position,
 		CommitID:     commitSHA,
 		SourceChange: change,

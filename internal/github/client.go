@@ -66,7 +66,15 @@ func (c *ClientImpl) CreateReviewComment(ctx context.Context, req *PostCommentRe
 		Body:     github.String(req.Body),
 		CommitID: github.String(req.CommitID),
 		Path:     github.String(req.Path),
-		Position: github.Int(req.Position),
+	}
+
+	// Use Line-based API (recommended) instead of deprecated Position-based API
+	if req.Line > 0 && req.Side != "" {
+		comment.Line = github.Int(req.Line)
+		comment.Side = github.String(req.Side)
+	} else {
+		// Fallback to Position for backwards compatibility
+		comment.Position = github.Int(req.Position)
 	}
 
 	created, _, err := c.client.PullRequests.CreateComment(ctx, c.owner, c.repo, c.prNumber, comment)

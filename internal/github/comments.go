@@ -73,7 +73,7 @@ func postCommentsConcurrently(ctx context.Context, client Client, comments []*co
 			// Check for duplicates
 			if isDuplicate(comm, existingComments) {
 				if debug {
-					log.Printf("[%d/%d] Skipping duplicate comment at position %d", idx+1, len(comments), comm.Position)
+					log.Printf("[%d/%d] Skipping duplicate comment at line %d (%s)", idx+1, len(comments), comm.Line, comm.Side)
 				}
 				resultChan <- CommentResult{
 					Status:      "skipped_duplicate",
@@ -128,7 +128,9 @@ func postCommentWithRetry(ctx context.Context, client Client, comm *comment.Gene
 		Body:     comm.Body,
 		CommitID: comm.CommitID,
 		Path:     comm.Path,
-		Position: comm.Position,
+		Line:     comm.Line,
+		Side:     comm.Side,
+		Position: comm.Position, // Kept for backwards compatibility
 	}
 
 	maxRetries := 3
@@ -165,7 +167,7 @@ func postCommentWithRetry(ctx context.Context, client Client, comm *comment.Gene
 
 		// Success
 		if debug {
-			log.Printf("[%d/%d] Posted comment at position %d: %s", idx, total, comm.Position, resp.HTMLURL)
+			log.Printf("[%d/%d] Posted comment at line %d (%s): %s", idx, total, comm.Line, comm.Side, resp.HTMLURL)
 		}
 		return CommentResult{
 			Status:      "posted",

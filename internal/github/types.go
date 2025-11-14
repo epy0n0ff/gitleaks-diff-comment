@@ -7,7 +7,9 @@ type PostCommentRequest struct {
 	Body     string `json:"body"`
 	CommitID string `json:"commit_id"`
 	Path     string `json:"path"`
-	Position int    `json:"position"`
+	Line     int    `json:"line"`      // Line number in the file
+	Side     string `json:"side"`      // "LEFT" or "RIGHT"
+	Position int    `json:"position"`  // Deprecated, kept for backwards compatibility
 }
 
 // PostCommentResponse represents the response from posting a comment
