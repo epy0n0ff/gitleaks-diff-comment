@@ -12,48 +12,66 @@ import (
 
 // ParseGitleaksDiff parses git diff output for .gitleaksignore
 func ParseGitleaksDiff(baseBranch, headRef string) ([]DiffChange, error) {
-	// Try multiple strategies to get the diff
-	strategies := []struct {
-		name    string
-		baseRef string
-		headRef string
-	}{
-		// Strategy 1: origin/base...HEAD (standard PR diff)
-		{"origin/base...HEAD", "origin/" + baseBranch, "HEAD"},
-		// Strategy 2: base...HEAD (if origin/ doesn't exist)
-		{"base...HEAD", baseBranch, "HEAD"},
-		// Strategy 3: HEAD^...HEAD (fallback for single-commit PRs)
-		{"HEAD^...HEAD", "HEAD^", "HEAD"},
+	// Build list of diff strategies to try
+	var strategies [][]string
+
+	// Strategy 1: origin/base..HEAD (two-dot, shows changes between branches)
+	if baseBranch != "" {
+		strategies = append(strategies, []string{"diff", "origin/" + baseBranch + "..HEAD", "--", ".gitleaksignore"})
 	}
 
-	var lastErr error
-	for _, strategy := range strategies {
-		if strategy.baseRef == "origin/" || strategy.baseRef == "" {
-			continue // skip if base branch is empty
-		}
+	// Strategy 2: base..HEAD (without origin/ prefix)
+	if baseBranch != "" {
+		strategies = append(strategies, []string{"diff", baseBranch + "..HEAD", "--", ".gitleaksignore"})
+	}
 
-		cmd := exec.Command("git", "diff", strategy.baseRef+"..."+strategy.headRef, "--", ".gitleaksignore")
+	// Strategy 3: origin/base...HEAD (three-dot, shows changes since common ancestor)
+	if baseBranch != "" {
+		strategies = append(strategies, []string{"diff", "origin/" + baseBranch + "...HEAD", "--", ".gitleaksignore"})
+	}
+
+	// Strategy 4: HEAD~1..HEAD (single commit diff)
+	strategies = append(strategies, []string{"diff", "HEAD~1..HEAD", "--", ".gitleaksignore"})
+
+	// Strategy 5: Simple HEAD diff (uncommitted changes)
+	strategies = append(strategies, []string{"diff", "HEAD", "--", ".gitleaksignore"})
+
+	var lastErr error
+	var lastOutput []byte
+
+	for i, args := range strategies {
+		cmd := exec.Command("git", args...)
 		output, err := cmd.CombinedOutput()
 
 		if err == nil {
 			// Success! Parse the output
-			return parseDiffOutput(output)
+			result, parseErr := parseDiffOutput(output)
+			if parseErr == nil && len(result) > 0 {
+				return result, nil
+			}
+			// If parsing failed or no results, try next strategy
+			if parseErr != nil {
+				lastErr = fmt.Errorf("strategy %d (%v) parse failed: %w", i+1, args, parseErr)
+			}
+			continue
 		}
 
 		// Save error for later
+		lastOutput = output
 		if exitErr, ok := err.(*exec.ExitError); ok {
-			lastErr = fmt.Errorf("strategy '%s' failed (exit %d): %s", strategy.name, exitErr.ExitCode(), string(output))
+			lastErr = fmt.Errorf("strategy %d (%v) failed (exit %d): %s", i+1, args, exitErr.ExitCode(), string(output))
 		} else {
-			lastErr = fmt.Errorf("strategy '%s' failed: %w", strategy.name, err)
+			lastErr = fmt.Errorf("strategy %d (%v) failed: %w", i+1, args, err)
 		}
 	}
 
-	// All strategies failed
+	// All strategies failed or returned no results
 	if lastErr != nil {
-		return nil, fmt.Errorf("all git diff strategies failed, last error: %w", lastErr)
+		return nil, fmt.Errorf("all git diff strategies failed, last error: %w (output: %s)", lastErr, string(lastOutput))
 	}
 
-	return nil, fmt.Errorf("unable to determine diff strategy (base: %s, head: %s)", baseBranch, headRef)
+	// No changes found
+	return []DiffChange{}, nil
 }
 
 // parseDiffOutput parses the git diff output
