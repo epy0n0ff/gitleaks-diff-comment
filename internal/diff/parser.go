@@ -12,15 +12,27 @@ import (
 
 // ParseGitleaksDiff parses git diff output for .gitleaksignore
 func ParseGitleaksDiff(baseBranch, headRef string) ([]DiffChange, error) {
-	// First, check if .gitleaksignore file exists
+	// Check if .gitleaksignore file exists in either HEAD or working directory
+	// This handles cases where the file is newly added
 	checkCmd := exec.Command("git", "ls-files", ".gitleaksignore")
 	checkOutput, _ := checkCmd.Output()
-	if len(checkOutput) == 0 {
-		// File doesn't exist in the repository
-		fmt.Printf("DEBUG: .gitleaksignore not tracked by git\n")
-		return []DiffChange{}, nil
+
+	// Also check working directory
+	workingDirCmd := exec.Command("ls", "-la", ".gitleaksignore")
+	workingDirOutput, _ := workingDirCmd.Output()
+
+	fmt.Printf("DEBUG: git ls-files .gitleaksignore: %q\n", string(checkOutput))
+	fmt.Printf("DEBUG: ls -la .gitleaksignore: %q\n", string(workingDirOutput))
+
+	// If file doesn't exist in git and not in working dir, skip
+	if len(checkOutput) == 0 && len(workingDirOutput) == 0 {
+		fmt.Printf("DEBUG: .gitleaksignore not found in git or working directory\n")
+		// Don't return early - the file might exist in the diff even if not in current HEAD
+		// This happens when a file is added in a PR
+	} else {
+		fmt.Printf("DEBUG: .gitleaksignore detected (git tracked: %v, in working dir: %v)\n",
+			len(checkOutput) > 0, len(workingDirOutput) > 0)
 	}
-	fmt.Printf("DEBUG: .gitleaksignore found in git: %s\n", strings.TrimSpace(string(checkOutput)))
 
 	// Build list of diff strategies to try
 	var strategies [][]string
