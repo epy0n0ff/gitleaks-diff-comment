@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 
 	"github.com/epy0n0ff/gitleaks-diff-comment/internal/comment"
 	"github.com/epy0n0ff/gitleaks-diff-comment/internal/config"
@@ -27,6 +28,16 @@ func run() error {
 		log.Println("This action is designed to run as a GitHub Action")
 	}
 
+	// Fix git safe.directory issue in Docker containers
+	if workspace := os.Getenv("GITHUB_WORKSPACE"); workspace != "" {
+		gitConfigCmd := exec.Command("git", "config", "--global", "--add", "safe.directory", workspace)
+		if output, err := gitConfigCmd.CombinedOutput(); err != nil {
+			log.Printf("Warning: Failed to configure git safe.directory: %v (output: %s)", err, string(output))
+		} else {
+			log.Printf("Configured git safe.directory for: %s", workspace)
+		}
+	}
+
 	// Parse configuration from environment
 	cfg, err := config.ParseFromEnv()
 	if err != nil {
@@ -45,6 +56,24 @@ func run() error {
 		}
 		if cfg.Debug {
 			log.Printf("Changed to workspace: %s", cfg.Workspace)
+		}
+	}
+
+	// Debug: Show git status
+	if cfg.Debug {
+		statusCmd := exec.Command("git", "status", "--short")
+		if statusOutput, err := statusCmd.CombinedOutput(); err == nil {
+			log.Printf("Git status:\n%s", string(statusOutput))
+		}
+
+		branchCmd := exec.Command("git", "branch", "-a")
+		if branchOutput, err := branchCmd.CombinedOutput(); err == nil {
+			log.Printf("Git branches:\n%s", string(branchOutput))
+		}
+
+		revParseCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
+		if revOutput, err := revParseCmd.Output(); err == nil {
+			log.Printf("Current branch: %s", string(revOutput))
 		}
 	}
 
