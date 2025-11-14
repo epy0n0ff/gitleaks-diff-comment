@@ -16,7 +16,7 @@ func TestNewGeneratedComment_WithLineNumber(t *testing.T) {
 		Position:   5,
 	}
 
-	comment, err := NewGeneratedComment(change, "owner/repo", "abc123")
+	comment, err := NewGeneratedComment(change, "owner/repo", "abc123", "")
 	if err != nil {
 		t.Fatalf("NewGeneratedComment() unexpected error: %v", err)
 	}
@@ -46,7 +46,7 @@ func TestNewGeneratedComment_WildcardPattern(t *testing.T) {
 		Position:   7,
 	}
 
-	comment, err := NewGeneratedComment(change, "owner/repo", "abc123")
+	comment, err := NewGeneratedComment(change, "owner/repo", "abc123", "")
 	if err != nil {
 		t.Fatalf("NewGeneratedComment() unexpected error: %v", err)
 	}
@@ -75,7 +75,7 @@ func TestNewGeneratedComment_Deletion(t *testing.T) {
 		Position:  10,
 	}
 
-	comment, err := NewGeneratedComment(change, "owner/repo", "abc123")
+	comment, err := NewGeneratedComment(change, "owner/repo", "abc123", "")
 	if err != nil {
 		t.Fatalf("NewGeneratedComment() unexpected error: %v", err)
 	}
@@ -150,6 +150,55 @@ func TestRenderTemplate_Deletion(t *testing.T) {
 	// Verify no line number mention
 	if strings.Contains(body, "(line") {
 		t.Errorf("Template should not mention line number for pattern: %s", body)
+	}
+}
+
+func TestNewGeneratedComment_EnterpriseServer(t *testing.T) {
+	change := &diff.DiffChange{
+		FilePath:   ".gitleaksignore",
+		Operation:  diff.OperationAddition,
+		LineNumber: 15,
+		Content:    "database/credentials.json:23",
+		Position:   8,
+	}
+
+	// Test with GitHub Enterprise Server hostname
+	comment, err := NewGeneratedComment(change, "owner/repo", "abc123", "github.company.com")
+	if err != nil {
+		t.Fatalf("NewGeneratedComment() unexpected error: %v", err)
+	}
+
+	// Verify body contains enterprise server link
+	expectedLink := "https://github.company.com/owner/repo/blob/abc123/database/credentials.json"
+	if !strings.Contains(comment.Body, expectedLink) {
+		t.Errorf("Comment body should contain enterprise server link %s, got: %s", expectedLink, comment.Body)
+	}
+
+	// Verify NOT contains github.com
+	if strings.Contains(comment.Body, "https://github.com/") {
+		t.Errorf("Comment body should NOT contain github.com link: %s", comment.Body)
+	}
+}
+
+func TestNewGeneratedComment_EnterpriseServerWithPort(t *testing.T) {
+	change := &diff.DiffChange{
+		FilePath:   ".gitleaksignore",
+		Operation:  diff.OperationAddition,
+		LineNumber: 20,
+		Content:    "config/*.env",
+		Position:   10,
+	}
+
+	// Test with GitHub Enterprise Server hostname with port
+	comment, err := NewGeneratedComment(change, "owner/repo", "abc123", "github.company.com:8443")
+	if err != nil {
+		t.Fatalf("NewGeneratedComment() unexpected error: %v", err)
+	}
+
+	// Verify body contains enterprise server link with port
+	expectedLink := "https://github.company.com:8443/owner/repo/blob/abc123/config"
+	if !strings.Contains(comment.Body, expectedLink) {
+		t.Errorf("Comment body should contain enterprise server link with port %s, got: %s", expectedLink, comment.Body)
 	}
 }
 

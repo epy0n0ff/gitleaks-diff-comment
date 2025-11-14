@@ -20,11 +20,12 @@ func PostComments(ctx context.Context, client Client, comments []*comment.Genera
 	}
 
 	// Check rate limit before starting
+	// Note: Respects rate limits from both GitHub.com and GitHub Enterprise Server
 	remaining, err := client.CheckRateLimit(ctx)
 	if err != nil {
 		log.Printf("Warning: failed to check rate limit: %v", err)
 	} else if debug {
-		log.Printf("GitHub API rate limit remaining: %d", remaining)
+		log.Printf("GitHub API rate limit remaining: %d calls", remaining)
 	}
 
 	if debug {

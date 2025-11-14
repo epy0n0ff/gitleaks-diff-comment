@@ -100,7 +100,7 @@ func run() error {
 	// Generate comments for each change
 	var comments []*comment.GeneratedComment
 	for _, change := range changes {
-		comm, err := comment.NewGeneratedComment(&change, cfg.Repository, cfg.CommitSHA)
+		comm, err := comment.NewGeneratedComment(&change, cfg.Repository, cfg.CommitSHA, cfg.GHHost)
 		if err != nil {
 			log.Printf("Warning: failed to generate comment for change at position %d: %v", change.Position, err)
 			continue
@@ -119,9 +119,23 @@ func run() error {
 	}
 
 	// Create GitHub API client
-	client, err := github.NewClient(cfg.GitHubToken, cfg.Owner(), cfg.Repo(), cfg.PRNumber)
+	if cfg.Debug {
+		if cfg.GHHost != "" {
+			log.Printf("GitHub Enterprise Server: %s", cfg.GHHost)
+			log.Printf("API Base URL: https://%s/api/v3/", cfg.GHHost)
+		} else {
+			log.Println("GitHub: Using GitHub.com (default)")
+			log.Println("API Base URL: https://api.github.com")
+		}
+	}
+
+	client, err := github.NewClient(cfg.GitHubToken, cfg.Owner(), cfg.Repo(), cfg.PRNumber, cfg.GHHost)
 	if err != nil {
 		return fmt.Errorf("failed to create GitHub client: %w", err)
+	}
+
+	if cfg.Debug {
+		log.Println("Client initialized successfully")
 	}
 
 	// Post comments

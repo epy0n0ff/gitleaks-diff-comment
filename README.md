@@ -44,14 +44,18 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           pr-number: ${{ github.event.pull_request.number }}
+          commit-sha: ${{ github.event.pull_request.head.sha }}
 ```
 
 ### Inputs
 
 | Input | Required | Default | Description |
 |-------|----------|---------|-------------|
-| `github-token` | Yes | - | GitHub token for API authentication |
+| `github-token` | Yes | - | GitHub token for API authentication (requires `repo` and `pull_requests:write` scopes) |
 | `pr-number` | Yes | - | Pull request number |
+| `commit-sha` | No | Auto-detected | Commit SHA to attach comments to. Defaults to PR HEAD commit via `git rev-parse HEAD`. Recommended: `${{ github.event.pull_request.head.sha }}` |
+| `comment-mode` | No | `override` | Comment mode: `override` (update existing) or `append` (always create new) |
+| `gh-host` | No | `''` | GitHub Enterprise Server hostname (e.g., `github.company.com`). Leave empty for GitHub.com |
 | `debug` | No | `false` | Enable debug logging |
 
 ### Outputs
@@ -204,6 +208,100 @@ Debug mode provides:
 - Per-comment processing logs
 - Retry attempt information
 - Progress updates for large batches
+
+## GitHub Enterprise Server Support
+
+This action fully supports GitHub Enterprise Server (GHES) 3.14+ installations. Configure your enterprise instance using the `gh-host` parameter.
+
+### Enterprise Setup
+
+Add the `gh-host` input to your workflow:
+
+```yaml
+- name: Comment on .gitleaksignore changes
+  uses: epy0n0ff/gitleaks-diff-comment@v1
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    pr-number: ${{ github.event.pull_request.number }}
+    commit-sha: ${{ github.event.pull_request.head.sha }}
+    gh-host: github.company.com  # Your enterprise hostname
+```
+
+**Important**: Provide only the hostname (optionally with port). Do not include `https://` or path components.
+
+### Examples
+
+```yaml
+# Simple hostname
+gh-host: github.company.com
+
+# Hostname with custom port
+gh-host: github.company.com:8443
+
+# Internal hostname
+gh-host: github.internal
+
+# GitHub.com (default) - leave empty or omit
+gh-host: ''
+```
+
+### Troubleshooting
+
+**Cannot connect to GitHub Enterprise Server**
+```
+Error: cannot connect to GitHub Enterprise Server at github.company.com
+  → Action: Verify hostname is correct and server is reachable
+  → Check: Network connectivity, firewall rules, DNS resolution
+```
+
+**Solutions**:
+- Verify hostname: `ping github.company.com` from runner
+- Check DNS resolution
+- Ensure runner can reach GHES on port 443 (or custom port)
+- Test API endpoint: `curl https://github.company.com/api/v3/meta`
+
+**Certificate signed by unknown authority**
+```
+Error: x509: certificate signed by unknown authority
+  → Action: Install GitHub Enterprise Server certificate in runner trust store
+```
+
+**Solutions**:
+- Use valid SSL certificate from trusted CA (recommended)
+- Install self-signed certificate on runners (testing only)
+- See [quickstart guide](./specs/002-github-enterprise-support/quickstart.md) for certificate setup
+
+**Authentication failed**
+```
+Error: authentication failed for GitHub Enterprise Server at github.company.com
+  → Action: Verify token has required permissions (repo, pull_requests)
+  → Check: Token is valid for enterprise instance
+```
+
+**Solutions**:
+- Verify token scopes in GHES settings
+- Check token expiration date
+- Test token: `curl -H "Authorization: Bearer TOKEN" https://github.company.com/api/v3/user`
+- Regenerate token if needed
+
+**Invalid gh-host format**
+```
+Error: gh-host must not include protocol (http:// or https://)
+  → Action: Remove protocol prefix from gh-host
+  → Example: gh-host: github.company.com
+```
+
+**Solution**: Remove `https://` or `http://` and any path like `/api/v3`
+
+### Enterprise Features
+
+- ✅ Automatic rate limit detection from enterprise instance
+- ✅ Support for Personal Access Tokens and GitHub App tokens
+- ✅ Custom port numbers (e.g., `:8443`)
+- ✅ Internal hostnames and IP addresses
+- ✅ Full backward compatibility with GitHub.com
+
+For detailed setup instructions, see the [Enterprise Quick Start Guide](./specs/002-github-enterprise-support/quickstart.md).
 
 ### Getting Help
 

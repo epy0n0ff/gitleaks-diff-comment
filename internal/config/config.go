@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 )
@@ -36,6 +37,9 @@ type Config struct {
 
 	// Enable debug logging
 	Debug bool
+
+	// GitHub Enterprise Server hostname (empty = GitHub.com)
+	GHHost string
 }
 
 // ParseFromEnv parses configuration from environment variables
@@ -43,11 +47,12 @@ func ParseFromEnv() (*Config, error) {
 	cfg := &Config{
 		GitHubToken: os.Getenv("INPUT_GITHUB-TOKEN"),
 		Repository:  os.Getenv("GITHUB_REPOSITORY"),
-		CommitSHA:   os.Getenv("GITHUB_SHA"),
+		CommitSHA:   getCommitSHA(),
 		BaseRef:     os.Getenv("GITHUB_BASE_REF"),
 		HeadRef:     os.Getenv("GITHUB_HEAD_REF"),
 		Workspace:   os.Getenv("GITHUB_WORKSPACE"),
 		CommentMode: os.Getenv("INPUT_COMMENT-MODE"),
+		GHHost:      os.Getenv("INPUT_GH-HOST"),
 	}
 
 	// Default comment mode to "override" if not specified
@@ -82,7 +87,8 @@ func (c *Config) Validate() error {
 	if c.GitHubToken == "" {
 		return errors.New("GitHub token is required (INPUT_GITHUB-TOKEN)\n" +
 			"  → Action: Set 'github-token' input in your workflow file\n" +
-			"  → Example: github-token: ${{ secrets.GITHUB_TOKEN }}")
+			"  → Example: github-token: ${{ secrets.GITHUB_TOKEN }}\n" +
+			"  → Required scopes: repo (read), pull_requests (write)")
 	}
 	if c.PRNumber <= 0 {
 		return errors.New("PR number must be positive (INPUT_PR-NUMBER)\n" +
@@ -109,6 +115,42 @@ func (c *Config) Validate() error {
 			"  → Action: Set 'comment-mode' input to either 'override' or 'append'\n"+
 			"  → Example: comment-mode: override", c.CommentMode)
 	}
+
+	// Validate GHHost format (GitHub Enterprise Server hostname)
+	if c.GHHost != "" {
+		// Reject protocol prefix (http:// or https://)
+		if strings.Contains(c.GHHost, "://") {
+			hostWithoutProtocol := strings.Split(c.GHHost, "://")[1]
+			return fmt.Errorf("gh-host must not include protocol (http:// or https://)\n"+
+				"  → Action: Remove protocol prefix from gh-host\n"+
+				"  → Example: gh-host: %s", hostWithoutProtocol)
+		}
+
+		// Reject path separator (/)
+		if strings.Contains(c.GHHost, "/") {
+			hostWithoutPath := strings.Split(c.GHHost, "/")[0]
+			return fmt.Errorf("gh-host must not include path\n"+
+				"  → Action: Remove path from gh-host (e.g., remove /api/v3)\n"+
+				"  → Example: gh-host: %s", hostWithoutPath)
+		}
+
+		// Validate port number if present
+		if strings.Contains(c.GHHost, ":") {
+			parts := strings.Split(c.GHHost, ":")
+			if len(parts) != 2 {
+				return errors.New("invalid gh-host format with port\n" +
+					"  → Action: Use format hostname:port\n" +
+					"  → Example: gh-host: github.company.com:8443")
+			}
+			port, err := strconv.Atoi(parts[1])
+			if err != nil || port < 1 || port > 65535 {
+				return fmt.Errorf("invalid port in gh-host: %s (must be 1-65535)\n"+
+					"  → Action: Use valid port number\n"+
+					"  → Example: gh-host: github.company.com:8443", parts[1])
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -128,4 +170,26 @@ func (c *Config) Repo() string {
 		return ""
 	}
 	return parts[1]
+}
+
+// getCommitSHA gets the commit SHA to use for PR comments
+// Priority: INPUT_COMMIT-SHA > git rev-parse HEAD > GITHUB_SHA
+func getCommitSHA() string {
+	// First, check if user provided commit-sha input
+	if commitSHA := os.Getenv("INPUT_COMMIT-SHA"); commitSHA != "" {
+		return commitSHA
+	}
+
+	// Try to get actual HEAD commit from git
+	// This is the most reliable method in PR context
+	cmd := exec.Command("git", "rev-parse", "HEAD")
+	if output, err := cmd.Output(); err == nil {
+		headCommit := strings.TrimSpace(string(output))
+		if headCommit != "" {
+			return headCommit
+		}
+	}
+
+	// Fallback to GITHUB_SHA (may not be PR HEAD in some contexts)
+	return os.Getenv("GITHUB_SHA")
 }

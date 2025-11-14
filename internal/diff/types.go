@@ -104,7 +104,15 @@ func ParseGitleaksEntry(line string) (*GitleaksEntry, error) {
 }
 
 // FileLink generates a GitHub file link for this entry
-func (e *GitleaksEntry) FileLink(repo, commitSHA string) string {
+// ghHost should be the GitHub Enterprise Server hostname (e.g., "github.company.com")
+// or empty string for GitHub.com
+func (e *GitleaksEntry) FileLink(repo, commitSHA, ghHost string) string {
+	// Determine base URL based on ghHost
+	baseURL := "https://github.com"
+	if ghHost != "" {
+		baseURL = "https://" + ghHost
+	}
+
 	// For patterns with wildcards, link to parent directory
 	path := e.FilePattern
 	if e.IsPattern {
@@ -112,16 +120,16 @@ func (e *GitleaksEntry) FileLink(repo, commitSHA string) string {
 		if path == "." {
 			path = ""
 		}
-		return fmt.Sprintf("https://github.com/%s/blob/%s/%s", repo, commitSHA, path)
+		return fmt.Sprintf("%s/%s/blob/%s/%s", baseURL, repo, commitSHA, path)
 	}
 
 	// For specific files with line numbers, create a permalink to that line
 	if e.HasLineNumber() {
-		return fmt.Sprintf("https://github.com/%s/blob/%s/%s#L%d", repo, commitSHA, path, e.LineNumber)
+		return fmt.Sprintf("%s/%s/blob/%s/%s#L%d", baseURL, repo, commitSHA, path, e.LineNumber)
 	}
 
 	// Default: link to the file
-	return fmt.Sprintf("https://github.com/%s/blob/%s/%s", repo, commitSHA, path)
+	return fmt.Sprintf("%s/%s/blob/%s/%s", baseURL, repo, commitSHA, path)
 }
 
 // HasLineNumber returns true if this entry has a line number

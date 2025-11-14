@@ -17,7 +17,9 @@ var additionTemplate string
 var deletionTemplate string
 
 // NewGeneratedComment creates a new GeneratedComment from a DiffChange
-func NewGeneratedComment(change *diff.DiffChange, repo, commitSHA string) (*GeneratedComment, error) {
+// ghHost should be the GitHub Enterprise Server hostname (e.g., "github.company.com")
+// or empty string for GitHub.com
+func NewGeneratedComment(change *diff.DiffChange, repo, commitSHA, ghHost string) (*GeneratedComment, error) {
 	// Parse the gitleaks entry
 	entry, err := diff.ParseGitleaksEntry(change.Content)
 	if err != nil {
@@ -27,7 +29,7 @@ func NewGeneratedComment(change *diff.DiffChange, repo, commitSHA string) (*Gene
 	// Prepare template data
 	data := CommentData{
 		FilePattern:   entry.FilePattern,
-		FileLink:      entry.FileLink(repo, commitSHA),
+		FileLink:      entry.FileLink(repo, commitSHA, ghHost),
 		Operation:     string(change.Operation),
 		HasLineNumber: entry.HasLineNumber(),
 		LineNumber:    entry.LineNumber,

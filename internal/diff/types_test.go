@@ -128,43 +128,81 @@ func TestGitleaksEntry_FileLink(t *testing.T) {
 		entry     GitleaksEntry
 		repo      string
 		commitSHA string
+		ghHost    string
 		expected  string
 	}{
 		{
-			name: "specific file",
+			name: "specific file - GitHub.com",
 			entry: GitleaksEntry{
 				FilePattern: "config/secrets.yml",
 				IsPattern:   false,
 			},
 			repo:      "owner/repo",
 			commitSHA: "abc123",
+			ghHost:    "",
 			expected:  "https://github.com/owner/repo/blob/abc123/config/secrets.yml",
 		},
 		{
-			name: "wildcard pattern",
+			name: "wildcard pattern - GitHub.com",
 			entry: GitleaksEntry{
 				FilePattern: "config/*.env",
 				IsPattern:   true,
 			},
 			repo:      "owner/repo",
 			commitSHA: "abc123",
+			ghHost:    "",
 			expected:  "https://github.com/owner/repo/blob/abc123/config",
 		},
 		{
-			name: "root wildcard pattern",
+			name: "root wildcard pattern - GitHub.com",
 			entry: GitleaksEntry{
 				FilePattern: "*.env",
 				IsPattern:   true,
 			},
 			repo:      "owner/repo",
 			commitSHA: "abc123",
+			ghHost:    "",
 			expected:  "https://github.com/owner/repo/blob/abc123/",
+		},
+		{
+			name: "specific file - Enterprise Server",
+			entry: GitleaksEntry{
+				FilePattern: "database/credentials.json",
+				IsPattern:   false,
+			},
+			repo:      "owner/repo",
+			commitSHA: "def456",
+			ghHost:    "github.company.com",
+			expected:  "https://github.company.com/owner/repo/blob/def456/database/credentials.json",
+		},
+		{
+			name: "wildcard pattern - Enterprise Server with port",
+			entry: GitleaksEntry{
+				FilePattern: "secrets/*.key",
+				IsPattern:   true,
+			},
+			repo:      "owner/repo",
+			commitSHA: "def456",
+			ghHost:    "github.company.com:8443",
+			expected:  "https://github.company.com:8443/owner/repo/blob/def456/secrets",
+		},
+		{
+			name: "file with line number - Enterprise Server",
+			entry: GitleaksEntry{
+				FilePattern: "config/app.yml",
+				LineNumber:  123,
+				IsPattern:   false,
+			},
+			repo:      "owner/repo",
+			commitSHA: "def456",
+			ghHost:    "github.internal",
+			expected:  "https://github.internal/owner/repo/blob/def456/config/app.yml#L123",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.entry.FileLink(tt.repo, tt.commitSHA)
+			result := tt.entry.FileLink(tt.repo, tt.commitSHA, tt.ghHost)
 			if result != tt.expected {
 				t.Errorf("FileLink() = %v, want %v", result, tt.expected)
 			}
