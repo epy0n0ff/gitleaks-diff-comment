@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"strings"
 
 	"github.com/google/go-github/v57/github"
 	"golang.org/x/oauth2"
@@ -80,6 +82,70 @@ func NewClient(token, owner, repo string, prNumber int, ghHost string) (Client, 
 		repo:     repo,
 		prNumber: prNumber,
 	}, nil
+}
+
+// isAuthError checks if an error is related to authentication
+func isAuthError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errMsg := strings.ToLower(err.Error())
+	return strings.Contains(errMsg, "401") ||
+		strings.Contains(errMsg, "unauthorized") ||
+		strings.Contains(errMsg, "authentication") ||
+		strings.Contains(errMsg, "bad credentials")
+}
+
+// isNetworkError checks if an error is related to network connectivity
+func isNetworkError(err error) bool {
+	if err == nil {
+		return false
+	}
+	// Check for network-related errors
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		return true
+	}
+	errMsg := strings.ToLower(err.Error())
+	return strings.Contains(errMsg, "connection refused") ||
+		strings.Contains(errMsg, "no such host") ||
+		strings.Contains(errMsg, "timeout") ||
+		strings.Contains(errMsg, "network")
+}
+
+// enhanceError adds context to errors based on error type
+func enhanceError(err error, ghHost string) error {
+	if err == nil {
+		return nil
+	}
+
+	if isAuthError(err) {
+		if ghHost != "" {
+			return fmt.Errorf("authentication failed for GitHub Enterprise Server at %s\n"+
+				"  → Action: Verify token has required permissions (repo, pull_requests)\n"+
+				"  → Check: Token is valid for enterprise instance\n"+
+				"  → Original error: %w", ghHost, err)
+		}
+		return fmt.Errorf("authentication failed for GitHub.com\n"+
+			"  → Action: Verify token has required permissions (repo, pull_requests)\n"+
+			"  → Check: Token is valid and not expired\n"+
+			"  → Original error: %w", err)
+	}
+
+	if isNetworkError(err) {
+		if ghHost != "" {
+			return fmt.Errorf("cannot connect to GitHub Enterprise Server at %s\n"+
+				"  → Action: Verify hostname is correct and server is reachable\n"+
+				"  → Check: Network connectivity, firewall rules, DNS resolution\n"+
+				"  → Original error: %w", ghHost, err)
+		}
+		return fmt.Errorf("cannot connect to GitHub.com\n"+
+			"  → Action: Check network connectivity\n"+
+			"  → Original error: %w", err)
+	}
+
+	// Return original error with minimal context
+	return err
 }
 
 // CreateReviewComment posts a line-level review comment on a PR

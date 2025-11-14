@@ -109,12 +109,12 @@ This is a single Go project with the following structure:
 
 ### Implementation for User Story 2
 
-- [ ] T022 [US2] Add authentication error detection logic in internal/github/client.go (distinguish auth vs network errors)
-- [ ] T023 [US2] Enhance error messages in NewClient to indicate authentication vs configuration issues in internal/github/client.go
-- [ ] T024 [US2] Add test helper function for mock enterprise API in tests/integration/enterprise_test.go
-- [ ] T025 [P] [US2] Add integration test for PAT authentication in tests/integration/enterprise_test.go
-- [ ] T026 [P] [US2] Add integration test for authentication failure with clear error message in tests/integration/enterprise_test.go
-- [ ] T027 [US2] Update Config.Validate() error messages to reference required token scopes in internal/config/config.go
+- [x] T022 [US2] Add authentication error detection logic in internal/github/client.go (distinguish auth vs network errors)
+- [x] T023 [US2] Enhance error messages in NewClient to indicate authentication vs configuration issues in internal/github/client.go
+- [x] T024 [US2] Add test helper function for mock enterprise API in tests/integration/enterprise_test.go
+- [x] T025 [P] [US2] Add integration test for PAT authentication in tests/integration/enterprise_test.go
+- [x] T026 [P] [US2] Add integration test for authentication failure with clear error message in tests/integration/enterprise_test.go
+- [x] T027 [US2] Update Config.Validate() error messages to reference required token scopes in internal/config/config.go
 
 **Checkpoint**: User Story 2 complete. At this point:
 - ✅ Action works with different authentication methods

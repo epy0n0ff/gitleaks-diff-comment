@@ -86,7 +86,8 @@ func (c *Config) Validate() error {
 	if c.GitHubToken == "" {
 		return errors.New("GitHub token is required (INPUT_GITHUB-TOKEN)\n" +
 			"  → Action: Set 'github-token' input in your workflow file\n" +
-			"  → Example: github-token: ${{ secrets.GITHUB_TOKEN }}")
+			"  → Example: github-token: ${{ secrets.GITHUB_TOKEN }}\n" +
+			"  → Required scopes: repo (read), pull_requests (write)")
 	}
 	if c.PRNumber <= 0 {
 		return errors.New("PR number must be positive (INPUT_PR-NUMBER)\n" +
