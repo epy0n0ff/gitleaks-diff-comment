@@ -70,15 +70,35 @@ func ParseGitleaksEntry(line string) (*GitleaksEntry, error) {
 		IsPattern:    strings.ContainsAny(line, "*?[]"),
 	}
 
-	// Check for line number suffix (path:42)
-	if parts := strings.Split(line, ":"); len(parts) == 2 {
-		if lineNum, err := strconv.Atoi(parts[1]); err == nil {
-			entry.FilePattern = parts[0]
+	// Parse gitleaks format: file:rule:line or file:line
+	// Examples:
+	//   DUMMY.txt:base64-encoded-secrets:1 -> file=DUMMY.txt, line=1
+	//   config/secrets.yml:23 -> file=config/secrets.yml, line=23
+	//   *.env -> file=*.env, line=0
+	parts := strings.Split(line, ":")
+
+	if len(parts) >= 2 {
+		// Check if last part is a line number
+		lastPart := parts[len(parts)-1]
+		if lineNum, err := strconv.Atoi(lastPart); err == nil {
+			// Last part is a line number
+			// Everything before the last colon is the file path
+			filePath := strings.Join(parts[:len(parts)-1], ":")
+
+			// If there are 3+ parts, extract just the file name (first part)
+			if len(parts) >= 3 {
+				// Format: file:rule:line -> use first part only
+				entry.FilePattern = parts[0]
+			} else {
+				// Format: file:line -> use everything before last colon
+				entry.FilePattern = filePath
+			}
 			entry.LineNumber = lineNum
 			return entry, nil
 		}
 	}
 
+	// No line number found, use the whole line as pattern
 	entry.FilePattern = line
 	return entry, nil
 }
