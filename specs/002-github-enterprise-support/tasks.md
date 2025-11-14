@@ -42,12 +42,12 @@ This is a single Go project with the following structure:
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T005 Add gh-host input to action.yml with description and default empty string
-- [ ] T006 Add GHHost field to Config struct in internal/config/config.go
-- [ ] T007 Parse INPUT_GH-HOST environment variable in ParseFromEnv() in internal/config/config.go
-- [ ] T008 Add GHHost validation logic in Config.Validate() in internal/config/config.go (reject protocol, reject path, validate port)
-- [ ] T009 Update NewClient signature to accept ghHost parameter in internal/github/client.go
-- [ ] T010 Update main.go in cmd/gitleaks-diff-comment/main.go to pass cfg.GHHost to github.NewClient()
+- [x] T005 Add gh-host input to action.yml with description and default empty string
+- [x] T006 Add GHHost field to Config struct in internal/config/config.go
+- [x] T007 Parse INPUT_GH-HOST environment variable in ParseFromEnv() in internal/config/config.go
+- [x] T008 Add GHHost validation logic in Config.Validate() in internal/config/config.go (reject protocol, reject path, validate port)
+- [x] T009 Update NewClient signature to accept ghHost parameter in internal/github/client.go
+- [x] T010 Update main.go in cmd/gitleaks-diff-comment/main.go to pass cfg.GHHost to github.NewClient()
 
 **Checkpoint**: Foundation ready - configuration parsing and client initialization infrastructure complete. User story implementation can now begin.
 

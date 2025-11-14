@@ -36,6 +36,9 @@ type Config struct {
 
 	// Enable debug logging
 	Debug bool
+
+	// GitHub Enterprise Server hostname (empty = GitHub.com)
+	GHHost string
 }
 
 // ParseFromEnv parses configuration from environment variables
@@ -48,6 +51,7 @@ func ParseFromEnv() (*Config, error) {
 		HeadRef:     os.Getenv("GITHUB_HEAD_REF"),
 		Workspace:   os.Getenv("GITHUB_WORKSPACE"),
 		CommentMode: os.Getenv("INPUT_COMMENT-MODE"),
+		GHHost:      os.Getenv("INPUT_GH-HOST"),
 	}
 
 	// Default comment mode to "override" if not specified
@@ -109,6 +113,42 @@ func (c *Config) Validate() error {
 			"  → Action: Set 'comment-mode' input to either 'override' or 'append'\n"+
 			"  → Example: comment-mode: override", c.CommentMode)
 	}
+
+	// Validate GHHost format (GitHub Enterprise Server hostname)
+	if c.GHHost != "" {
+		// Reject protocol prefix (http:// or https://)
+		if strings.Contains(c.GHHost, "://") {
+			hostWithoutProtocol := strings.Split(c.GHHost, "://")[1]
+			return fmt.Errorf("gh-host must not include protocol (http:// or https://)\n"+
+				"  → Action: Remove protocol prefix from gh-host\n"+
+				"  → Example: gh-host: %s", hostWithoutProtocol)
+		}
+
+		// Reject path separator (/)
+		if strings.Contains(c.GHHost, "/") {
+			hostWithoutPath := strings.Split(c.GHHost, "/")[0]
+			return fmt.Errorf("gh-host must not include path\n"+
+				"  → Action: Remove path from gh-host (e.g., remove /api/v3)\n"+
+				"  → Example: gh-host: %s", hostWithoutPath)
+		}
+
+		// Validate port number if present
+		if strings.Contains(c.GHHost, ":") {
+			parts := strings.Split(c.GHHost, ":")
+			if len(parts) != 2 {
+				return errors.New("invalid gh-host format with port\n" +
+					"  → Action: Use format hostname:port\n" +
+					"  → Example: gh-host: github.company.com:8443")
+			}
+			port, err := strconv.Atoi(parts[1])
+			if err != nil || port < 1 || port > 65535 {
+				return fmt.Errorf("invalid port in gh-host: %s (must be 1-65535)\n"+
+					"  → Action: Use valid port number\n"+
+					"  → Example: gh-host: github.company.com:8443", parts[1])
+			}
+		}
+	}
+
 	return nil
 }
 

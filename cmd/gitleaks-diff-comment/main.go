@@ -119,7 +119,7 @@ func run() error {
 	}
 
 	// Create GitHub API client
-	client, err := github.NewClient(cfg.GitHubToken, cfg.Owner(), cfg.Repo(), cfg.PRNumber)
+	client, err := github.NewClient(cfg.GitHubToken, cfg.Owner(), cfg.Repo(), cfg.PRNumber, cfg.GHHost)
 	if err != nil {
 		return fmt.Errorf("failed to create GitHub client: %w", err)
 	}

@@ -3,6 +3,7 @@ package github
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/google/go-github/v57/github"
 	"golang.org/x/oauth2"
@@ -35,7 +36,7 @@ type ClientImpl struct {
 }
 
 // NewClient creates a new GitHub API client
-func NewClient(token, owner, repo string, prNumber int) (Client, error) {
+func NewClient(token, owner, repo string, prNumber int, ghHost string) (Client, error) {
 	if token == "" {
 		return nil, errors.New("GitHub token is required")
 	}
@@ -55,8 +56,26 @@ func NewClient(token, owner, repo string, prNumber int) (Client, error) {
 	)
 	tc := oauth2.NewClient(ctx, ts)
 
+	// Create GitHub client (enterprise or default)
+	var ghClient *github.Client
+	var err error
+
+	if ghHost != "" {
+		// GitHub Enterprise Server
+		baseURL := "https://" + ghHost
+		uploadURL := "https://" + ghHost
+
+		ghClient, err = github.NewClient(tc).WithEnterpriseURLs(baseURL, uploadURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create GitHub Enterprise client for %s: %w", ghHost, err)
+		}
+	} else {
+		// GitHub.com (default)
+		ghClient = github.NewClient(tc)
+	}
+
 	return &ClientImpl{
-		client:   github.NewClient(tc),
+		client:   ghClient,
 		owner:    owner,
 		repo:     repo,
 		prNumber: prNumber,

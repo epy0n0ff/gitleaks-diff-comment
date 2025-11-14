@@ -21,6 +21,10 @@ inputs:
     description: 'Enable debug logging'
     required: false
     default: 'false'
+  gh-host:
+    description: 'GitHub Enterprise Server hostname (e.g., github.company.com). Leave empty for GitHub.com.'
+    required: false
+    default: ''
 
 outputs:
   posted:
