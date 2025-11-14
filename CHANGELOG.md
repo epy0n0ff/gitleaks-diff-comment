@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Recommended usage: `commit-sha: ${{ github.event.pull_request.head.sha }}`
   - Backward compatible: Auto-detects correct commit if not specified
   - Affects: Both GitHub.com and GitHub Enterprise Server installations
+- **Fixed file links in PR comments for Enterprise Server** - File links now use correct enterprise hostname
+  - Issue: File links in comments always pointed to github.com even on enterprise servers
+  - Solution: FileLink method now uses gh-host parameter to generate enterprise URLs
+  - Impact: Users can now click links to view files on their enterprise instance
+  - Works with custom ports (e.g., `github.company.com:8443`)
 
 ### Added
 - **GitHub Enterprise Server support** - Action now supports GitHub Enterprise Server (GHES) 3.14+ installations
