@@ -100,7 +100,7 @@ func run() error {
 	// Generate comments for each change
 	var comments []*comment.GeneratedComment
 	for _, change := range changes {
-		comm, err := comment.NewGeneratedComment(&change, cfg.Repository, cfg.CommitSHA)
+		comm, err := comment.NewGeneratedComment(&change, cfg.Repository, cfg.CommitSHA, cfg.GHHost)
 		if err != nil {
 			log.Printf("Warning: failed to generate comment for change at position %d: %v", change.Position, err)
 			continue
