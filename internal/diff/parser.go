@@ -90,6 +90,9 @@ func ParseGitleaksDiff(baseBranch, headRef string) ([]DiffChange, error) {
 
 	// All strategies failed
 	if lastErr != nil {
+		if len(lastOutput) > 0 {
+			return nil, fmt.Errorf("all %d git diff strategies failed, last error: %w (output: %s)", len(strategies), lastErr, string(lastOutput))
+		}
 		return nil, fmt.Errorf("all %d git diff strategies failed, last error: %w", len(strategies), lastErr)
 	}
 
