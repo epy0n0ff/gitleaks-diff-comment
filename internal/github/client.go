@@ -249,11 +249,14 @@ func (c *ClientImpl) CreateIssueComment(ctx context.Context, body string) (*Post
 }
 
 // CheckRateLimit returns remaining API calls
+// Note: Automatically reads rate limit headers from any GitHub instance (including enterprise)
 func (c *ClientImpl) CheckRateLimit(ctx context.Context) (int, error) {
 	rate, _, err := c.client.RateLimit.Get(ctx)
 	if err != nil {
 		return 0, err
 	}
 
+	// The go-github library automatically parses X-RateLimit-* headers
+	// from both GitHub.com and GitHub Enterprise Server responses
 	return rate.Core.Remaining, nil
 }

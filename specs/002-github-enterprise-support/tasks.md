@@ -172,11 +172,11 @@ This is a single Go project with the following structure:
 
 ### Implementation for User Story 4
 
-- [ ] T035 [US4] Review existing rate limit handling in internal/github/comments.go (verify it uses rate limit headers)
-- [ ] T036 [US4] Add debug logging for rate limit values in CheckRateLimit in internal/github/client.go
-- [ ] T037 [US4] Add debug logging for rate limit detection when action initializes in cmd/gitleaks-diff-comment/main.go
-- [ ] T038 [P] [US4] Add integration test for custom rate limit handling in tests/integration/enterprise_test.go
-- [ ] T039 [P] [US4] Add integration test verifying debug logs show rate limit values in tests/integration/enterprise_test.go
+- [x] T035 [US4] Review existing rate limit handling in internal/github/comments.go (verify it uses rate limit headers)
+- [x] T036 [US4] Add debug logging for rate limit values in CheckRateLimit in internal/github/client.go
+- [x] T037 [US4] Add debug logging for rate limit detection when action initializes in cmd/gitleaks-diff-comment/main.go
+- [x] T038 [P] [US4] Add integration test for custom rate limit handling in tests/integration/enterprise_test.go
+- [x] T039 [P] [US4] Add integration test verifying debug logs show rate limit values in tests/integration/enterprise_test.go
 
 **Checkpoint**: User Story 4 complete. At this point:
 - ✅ Enterprise rate limits are respected

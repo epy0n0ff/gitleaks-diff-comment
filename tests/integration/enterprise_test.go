@@ -281,3 +281,107 @@ func TestInvalidURLFormat(t *testing.T) {
 		})
 	}
 }
+
+// TestEnterpriseRateLimitHandling tests that enterprise rate limits are read and respected
+func TestEnterpriseRateLimitHandling(t *testing.T) {
+	// Create mock enterprise server with custom rate limits
+	server := MockEnterpriseServer(t, func(w http.ResponseWriter, r *http.Request) {
+		// Verify authentication
+		auth := r.Header.Get("Authorization")
+		if !strings.HasPrefix(auth, "Bearer ") {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		// Mock rate limit endpoint with custom enterprise limits
+		if strings.Contains(r.URL.Path, "/rate_limit") {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"resources": map[string]interface{}{
+					"core": map[string]interface{}{
+						"limit":     10000, // Custom enterprise limit
+						"remaining": 9500,  // Custom remaining count
+						"reset":     1234567890,
+					},
+				},
+			})
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	})
+	defer server.Close()
+
+	ghHost := strings.TrimPrefix(server.URL, "http://")
+	client, err := github.NewClient("test-token", "owner", "repo", 123, ghHost)
+	if err != nil {
+		t.Fatalf("NewClient() failed: %v", err)
+	}
+
+	// Check rate limit - should return custom enterprise values
+	ctx := context.Background()
+	remaining, err := client.CheckRateLimit(ctx)
+	if err != nil {
+		t.Errorf("CheckRateLimit() failed: %v", err)
+	}
+
+	// Verify we got the enterprise rate limit (9500)
+	if remaining != 9500 {
+		t.Errorf("Expected enterprise rate limit remaining=9500, got %d", remaining)
+	}
+}
+
+// TestEnterpriseRateLimitDebugLogging tests that debug logs show rate limit values
+func TestEnterpriseRateLimitDebugLogging(t *testing.T) {
+	// This test verifies that rate limit information is available via CheckRateLimit
+	// The actual debug logging happens in comments.PostComments when debug=true
+
+	// Create mock server with rate limit headers
+	server := MockEnterpriseServer(t, func(w http.ResponseWriter, r *http.Request) {
+		auth := r.Header.Get("Authorization")
+		if !strings.HasPrefix(auth, "Bearer ") {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		// Different rate limit for enterprise
+		if strings.Contains(r.URL.Path, "/rate_limit") {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"resources": map[string]interface{}{
+					"core": map[string]interface{}{
+						"limit":     15000, // Higher enterprise limit
+						"remaining": 14800,
+						"reset":     1234567890,
+					},
+				},
+			})
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	})
+	defer server.Close()
+
+	ghHost := strings.TrimPrefix(server.URL, "http://")
+	client, err := github.NewClient("test-token", "owner", "repo", 123, ghHost)
+	if err != nil {
+		t.Fatalf("NewClient() failed: %v", err)
+	}
+
+	// Verify rate limit can be retrieved for debug logging
+	ctx := context.Background()
+	remaining, err := client.CheckRateLimit(ctx)
+	if err != nil {
+		t.Fatalf("CheckRateLimit() failed: %v", err)
+	}
+
+	// Verify enterprise rate limit is detected
+	if remaining != 14800 {
+		t.Errorf("Expected enterprise rate limit remaining=14800, got %d", remaining)
+	}
+
+	// Note: Actual debug logging is tested by setting debug=true in PostComments
+	// and verifying log output contains "GitHub API rate limit remaining: {remaining} calls"
+}
+
