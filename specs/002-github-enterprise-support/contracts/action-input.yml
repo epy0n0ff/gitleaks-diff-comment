@@ -1,0 +1,213 @@
+# GitHub Action Input Contract: gh-host parameter
+# Feature: 002-github-enterprise-support
+# Purpose: Define the gh-host input specification for GitHub Actions
+
+name: gh-host
+description: |
+  GitHub Enterprise Server hostname for self-hosted GitHub instances.
+
+  Provide only the hostname (or hostname:port), without protocol or path.
+  Leave empty to use GitHub.com (public API).
+
+  Examples:
+    - github.company.com
+    - github.enterprise.internal
+    - github.mycompany.com:8443
+    - 10.0.1.50:8443
+
+required: false
+default: ''
+
+# Input Specification
+spec:
+  type: string
+  format: hostname-or-hostname-port
+  min_length: 0  # Empty string is valid (defaults to GitHub.com)
+  max_length: 255
+
+  pattern: '^([a-zA-Z0-9]([a-zA-Z0-9.-])*[a-zA-Z0-9](:[0-9]{1,5})?)?$'
+  pattern_description: |
+    - Empty string: Valid (defaults to GitHub.com)
+    - Hostname: Letters, numbers, dots, hyphens (e.g., github.company.com)
+    - Port (optional): Colon followed by 1-5 digits (e.g., :8443)
+    - Must NOT include: protocol (https://), paths (/api/v3)
+
+# Valid Examples
+valid_examples:
+  - value: ''
+    description: Empty (defaults to GitHub.com public API)
+
+  - value: 'github.company.com'
+    description: Simple enterprise hostname
+
+  - value: 'github.enterprise.internal'
+    description: Internal enterprise hostname
+
+  - value: 'github.mycompany.com:8443'
+    description: Enterprise hostname with custom port
+
+  - value: '10.0.1.50'
+    description: IP address (enterprise on private network)
+
+  - value: '10.0.1.50:8443'
+    description: IP address with custom port
+
+# Invalid Examples
+invalid_examples:
+  - value: 'https://github.company.com'
+    error: 'Must not include protocol (https://)'
+    guidance: 'Remove https:// prefix. Use: github.company.com'
+
+  - value: 'http://github.company.com'
+    error: 'Must not include protocol (http://)'
+    guidance: 'Remove http:// prefix. Use: github.company.com'
+
+  - value: 'github.company.com/api/v3'
+    error: 'Must not include path (/api/v3)'
+    guidance: 'Remove path. Use: github.company.com (path will be added automatically)'
+
+  - value: 'github.company.com:99999'
+    error: 'Invalid port number (must be 1-65535)'
+    guidance: 'Use valid port range. Example: github.company.com:8443'
+
+# Validation Rules
+validation:
+  rules:
+    - id: VR-INPUT-001
+      rule: Must not contain '://' (protocol separator)
+      error_message: |
+        Invalid gh-host format: Must not include protocol
+        → Action: Remove 'https://' or 'http://' prefix
+        → Example: gh-host: {hostname_without_protocol}
+
+    - id: VR-INPUT-002
+      rule: Must not contain '/' (path separator)
+      error_message: |
+        Invalid gh-host format: Must not include path
+        → Action: Remove path (e.g., /api/v3) from gh-host
+        → Example: gh-host: {hostname_without_path}
+
+    - id: VR-INPUT-003
+      rule: Port must be 1-65535 if provided
+      error_message: |
+        Invalid port in gh-host: {port}
+        → Action: Use valid port number (1-65535)
+        → Example: gh-host: github.company.com:8443
+
+    - id: VR-INPUT-004
+      rule: Empty string is valid (defaults to GitHub.com)
+      error_message: N/A
+
+# Runtime Behavior
+runtime_behavior:
+  when_empty:
+    description: Defaults to GitHub.com public API
+    api_url: https://api.github.com
+
+  when_provided:
+    description: Uses GitHub Enterprise Server API
+    api_url_template: 'https://{gh-host}/api/v3/'
+    examples:
+      - input: 'github.company.com'
+        computed_url: 'https://github.company.com/api/v3/'
+
+      - input: 'github.internal:8443'
+        computed_url: 'https://github.internal:8443/api/v3/'
+
+# Integration with action.yml
+action_yml_definition: |
+  inputs:
+    gh-host:
+      description: 'GitHub Enterprise Server hostname (e.g., github.company.com). Leave empty for GitHub.com.'
+      required: false
+      default: ''
+
+# Usage in Workflows
+workflow_examples:
+  github_com:
+    description: Use with GitHub.com (default)
+    yaml: |
+      - uses: epy0n0ff/gitleaks-diff-comment@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-number: ${{ github.event.pull_request.number }}
+          # gh-host not specified = GitHub.com
+
+  enterprise_simple:
+    description: Use with GitHub Enterprise Server (simple hostname)
+    yaml: |
+      - uses: epy0n0ff/gitleaks-diff-comment@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-number: ${{ github.event.pull_request.number }}
+          gh-host: github.company.com
+
+  enterprise_with_port:
+    description: Use with GitHub Enterprise Server (custom port)
+    yaml: |
+      - uses: epy0n0ff/gitleaks-diff-comment@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-number: ${{ github.event.pull_request.number }}
+          gh-host: github.company.com:8443
+
+# Error Handling Contract
+error_handling:
+  configuration_error:
+    when: Invalid gh-host format
+    detection_phase: Configuration parsing
+    example_error: |
+      Error: Invalid gh-host format 'https://github.company.com'
+      → Action: Provide hostname only, without 'https://' prefix
+      → Example: gh-host: github.company.com
+    user_action: Fix workflow YAML and re-run
+
+  network_error:
+    when: Cannot reach GitHub Enterprise Server
+    detection_phase: First API call
+    example_error: |
+      Error: Cannot connect to GitHub Enterprise Server at github.company.com
+      → Action: Verify hostname is correct and server is reachable
+      → Check: Network connectivity, firewall rules, DNS resolution
+    user_action: Verify network configuration, check server status
+
+  certificate_error:
+    when: SSL/TLS certificate validation fails
+    detection_phase: HTTPS connection establishment
+    example_error: |
+      Error: x509: certificate signed by unknown authority
+      → Action: Install GitHub Enterprise Server certificate in runner trust store
+      → See: Documentation on certificate requirements
+    user_action: Configure runner to trust enterprise certificate
+
+  authentication_error:
+    when: Token invalid or insufficient permissions
+    detection_phase: First API call
+    example_error: |
+      Error: Authentication failed for github.company.com
+      → Action: Check token has required permissions
+      → Required: repo (read), pull_requests (write)
+    user_action: Verify token permissions in GitHub Enterprise Server settings
+
+# Testing Contract
+testing_requirements:
+  unit_tests:
+    - Parse gh-host from INPUT_GH-HOST environment variable
+    - Default to empty string when not provided
+    - Validate format (reject protocol, path, invalid port)
+    - Accept valid hostnames with and without ports
+
+  integration_tests:
+    - Set INPUT_GH-HOST and verify correct API URL construction
+    - Test with mock GitHub Enterprise Server API
+    - Verify backward compatibility (empty gh-host = GitHub.com)
+
+  regression_tests:
+    - Existing workflows without gh-host continue to work
+    - No breaking changes to existing API operations
+
+# Version History
+version: 1.0.0
+created: 2025-11-14
+last_modified: 2025-11-14
+status: Draft
