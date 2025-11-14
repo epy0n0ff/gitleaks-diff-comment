@@ -69,7 +69,7 @@ func ParseFromEnv() (*Config, error) {
 }
 
 // Validate checks if the configuration is valid
-func Validate(c *Config) error {
+func (c *Config) Validate() error {
 	if c.GitHubToken == "" {
 		return errors.New("GitHub token is required (INPUT_GITHUB-TOKEN)\n" +
 			"  → Action: Set 'github-token' input in your workflow file\n" +
