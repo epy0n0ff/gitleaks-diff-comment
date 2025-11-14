@@ -1,0 +1,11 @@
+diff --git a/.gitleaksignore b/.gitleaksignore
+index abc123..def456 100644
+--- a/.gitleaksignore
++++ b/.gitleaksignore
+@@ -5,0 +6,3 @@
++database/credentials.json:23
++config/*.env
++secrets/api-keys.yml
+@@ -10,2 +13,0 @@
+-old-secrets.yml
+-deprecated/*.key

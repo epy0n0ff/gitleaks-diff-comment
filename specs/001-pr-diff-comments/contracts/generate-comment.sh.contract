@@ -1,0 +1,144 @@
+#!/bin/bash
+# Script Contract: generate-comment.sh
+# Purpose: Generate markdown comment text for .gitleaksignore changes
+# Version: 1.0.0
+
+## INPUTS
+
+# stdin: JSON array from parse-gitleaks-diff.sh (or file via --input)
+# Format: See parse-gitleaks-diff.sh.contract output
+
+# Arguments:
+# --input FILE: Read JSON from file instead of stdin
+# --repo OWNER/REPO: Repository name (default: $GITHUB_REPOSITORY)
+# --commit SHA: Commit SHA for file links (default: $GITHUB_SHA)
+
+# Environment Variables (Optional)
+# - GITHUB_REPOSITORY: Repository in format "owner/repo"
+# - GITHUB_SHA: Commit SHA for generating file links
+
+## OUTPUTS
+
+# stdout: JSON array of generated comments
+# Format:
+# [
+#   {
+#     "path": ".gitleaksignore",
+#     "position": 1,
+#     "body": "🔒 **Gitleaks Exclusion Added**\n\n...",
+#     "commit_id": "abc123..."
+#   },
+#   ...
+# ]
+
+# stderr: Warnings and error messages
+
+## EXIT CODES
+
+# 0: Success - comments generated (may be empty array)
+# 1: General error (invalid JSON input, missing arguments)
+# 2: Missing required environment variables
+# 3: Invalid diff change format
+
+## BEHAVIOR
+
+# 1. Reads JSON array from stdin or --input file
+# 2. For each diff change:
+#    a. Extracts file pattern from content
+#    b. Determines if addition (+) or deletion (-)
+#    c. Generates appropriate comment text:
+#       - Addition: "Gitleaks Exclusion Added" with security warning
+#       - Deletion: "Gitleaks Exclusion Removed" with re-scan notice
+#    d. Constructs GitHub file link from pattern
+#    e. Builds comment object with path, position, body
+# 3. Outputs JSON array to stdout
+# 4. Exits with appropriate code
+
+## COMMENT TEMPLATES
+
+# For additions (+):
+# ---
+# 🔒 **Gitleaks Exclusion Added**
+#
+# This PR adds `{file_pattern}` to the gitleaks ignore list.
+#
+# 📄 [View file]({file_link})
+#
+# ⚠️ **Security Note**: Files in `.gitleaksignore` will be excluded from secret scanning.
+# Please ensure this exclusion is intentional and documented.
+# ---
+
+# For deletions (-):
+# ---
+# ✅ **Gitleaks Exclusion Removed**
+#
+# This PR removes `{file_pattern}` from the gitleaks ignore list.
+#
+# 📄 [Previously ignored file]({file_link})
+#
+# ℹ️ **Note**: This file will now be scanned by gitleaks in future runs.
+# ---
+
+## FILE LINK GENERATION
+
+# Pattern: https://github.com/{owner}/{repo}/blob/{commit_sha}/{file_path}
+# - Extracts file_path from gitleaks entry (before any colon)
+# - Uses commit SHA for stable links
+# - Handles patterns with wildcards (links to directory)
+
+## EDGE CASES
+
+# - Empty input array: Output empty array
+# - Invalid JSON input: Exit with error code 1
+# - File pattern with wildcards: Link to parent directory
+# - File pattern with line number (e.g., "path:42"): Strip line number for link
+# - Special characters in path: URL encode for link
+# - Very long comment (>65536 chars): Truncate with ellipsis
+
+## DEPENDENCIES
+
+# - jq (version 1.6+)
+# - bash (version 4.0+)
+# - sed, awk (standard Unix tools)
+
+## EXAMPLE USAGE
+
+# cat changes.json | ./generate-comment.sh > comments.json
+# ./generate-comment.sh --input changes.json --repo acme/myrepo --commit abc123 > comments.json
+
+## EXAMPLE INPUT
+
+# [
+#   {
+#     "file": ".gitleaksignore",
+#     "operation": "+",
+#     "line_number": 6,
+#     "content": "database/credentials.json:23",
+#     "position": 1
+#   }
+# ]
+
+## EXAMPLE OUTPUT
+
+# [
+#   {
+#     "path": ".gitleaksignore",
+#     "position": 1,
+#     "body": "🔒 **Gitleaks Exclusion Added**\n\nThis PR adds `database/credentials.json` to the gitleaks ignore list.\n\n📄 [View file](https://github.com/acme/myrepo/blob/abc123/database/credentials.json)\n\n⚠️ **Security Note**: Files in `.gitleaksignore` will be excluded from secret scanning.\nPlease ensure this exclusion is intentional and documented.",
+#     "commit_id": "abc123"
+#   }
+# ]
+
+## TESTING HOOKS
+
+# For unit testing, set:
+# - DRY_RUN: If set, print template rendering steps without generating output
+# - MOCK_REPO: Override repository for testing
+# - MOCK_SHA: Override commit SHA for testing
+
+## SECURITY CONSIDERATIONS
+
+# - Sanitizes file paths before constructing URLs
+# - Escapes markdown special characters in file names
+# - Limits comment body to GitHub's size limits
+# - Does not execute any file content

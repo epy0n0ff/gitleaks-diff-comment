@@ -1,0 +1,15 @@
+# Gitleaks ignore file
+# This file contains patterns for files that should be excluded from gitleaks scanning
+
+# Database credentials
+database/credentials.json:23
+
+# Environment files
+config/*.env
+*.env.local
+
+# API keys
+secrets/api-keys.yml
+
+# Test data
+tests/fixtures/mock-secrets.json

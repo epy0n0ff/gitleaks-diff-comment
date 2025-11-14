@@ -1,0 +1,187 @@
+#!/bin/bash
+# Script Contract: post-comment.sh
+# Purpose: Post generated comments to GitHub PR via API
+# Version: 1.0.0
+
+## INPUTS
+
+# stdin: JSON array from generate-comment.sh (or file via --input)
+# Format: See generate-comment.sh.contract output
+
+# Arguments:
+# --input FILE: Read JSON from file instead of stdin
+# --pr NUMBER: Pull request number (default: $PR_NUMBER)
+# --repo OWNER/REPO: Repository name (default: $GITHUB_REPOSITORY)
+# --check-duplicates: Enable duplicate comment detection (default: enabled)
+# --dry-run: Print API calls without executing
+
+# Environment Variables (Required)
+# - GITHUB_TOKEN: GitHub API authentication token
+# - PR_NUMBER: Pull request number
+# - GITHUB_REPOSITORY: Repository in format "owner/repo"
+
+## OUTPUTS
+
+# stdout: JSON summary of posting results
+# Format:
+# {
+#   "posted": 3,
+#   "skipped_duplicates": 1,
+#   "errors": 0,
+#   "comments": [
+#     {
+#       "id": 987654321,
+#       "url": "https://github.com/owner/repo/pull/42#discussion_r987654321",
+#       "status": "posted"
+#     },
+#     {
+#       "body": "...",
+#       "status": "duplicate",
+#       "reason": "Identical comment already exists"
+#     }
+#   ]
+# }
+
+# stderr: Error messages and API responses
+
+## EXIT CODES
+
+# 0: Success - all comments posted or skipped appropriately
+# 1: General error
+# 2: Missing required environment variables
+# 3: GitHub API authentication failure
+# 4: API rate limit exceeded
+# 5: Invalid pull request number or repository
+
+## BEHAVIOR
+
+# 1. Validates required environment variables
+# 2. Reads JSON array from stdin or --input file
+# 3. If --check-duplicates enabled:
+#    a. Fetches existing PR review comments
+#    b. Builds deduplication cache (body + position)
+# 4. For each comment in input:
+#    a. Checks if duplicate exists
+#    b. If duplicate: Skip and record
+#    c. If not duplicate:
+#       i. Posts via GitHub API: POST /repos/{owner}/{repo}/pulls/{pr}/comments
+#       ii. Implements exponential backoff on rate limits
+#       iii. Falls back to PR-level comment if position fails
+#       iv. Records result (success/error)
+# 5. Outputs summary JSON to stdout
+# 6. Exits with appropriate code
+
+## API ENDPOINTS
+
+# List PR Comments (for deduplication):
+# GET /repos/{owner}/{repo}/pulls/{pr}/comments
+# Headers: Authorization: Bearer $GITHUB_TOKEN
+
+# Post Review Comment:
+# POST /repos/{owner}/{repo}/pulls/{pr}/comments
+# Headers: Authorization: Bearer $GITHUB_TOKEN
+# Body:
+# {
+#   "body": "comment text",
+#   "commit_id": "sha",
+#   "path": ".gitleaksignore",
+#   "position": 1
+# }
+
+# Post PR Comment (fallback):
+# POST /repos/{owner}/{repo}/issues/{pr}/comments
+# Headers: Authorization: Bearer $GITHUB_TOKEN
+# Body:
+# {
+#   "body": "comment text (includes file path context)"
+# }
+
+## DEDUPLICATION LOGIC
+
+# Two comments are considered duplicates if:
+# 1. Same body text (exact match)
+# 2. Same file path
+# 3. Same position in diff
+
+# Cache key: SHA256(path + position + body)
+
+## RATE LIMIT HANDLING
+
+# 1. Check rate limit before posting: GET /rate_limit
+# 2. If remaining < 10: Wait until reset time
+# 3. On 429 response: Exponential backoff (1s, 2s, 4s, 8s, max 5 retries)
+# 4. On persistent rate limit: Exit with code 4
+
+## ERROR HANDLING
+
+# - 401 Unauthorized: Exit with code 3 (auth failure)
+# - 403 Forbidden: Check rate limit, retry or exit code 4
+# - 404 Not Found: Exit with code 5 (invalid PR/repo)
+# - 422 Unprocessable Entity: Fall back to PR-level comment
+# - 500/502/503 Server Error: Retry with backoff (max 3 retries)
+
+## EDGE CASES
+
+# - Empty input array: Exit successfully with posted=0
+# - All comments are duplicates: Exit successfully with posted=0, skipped=N
+# - Comment position out of range: Fall back to PR-level comment with file context
+# - Very long comment body: GitHub automatically truncates (65536 char limit)
+# - PR closed during workflow: Attempt to post anyway (GitHub allows)
+# - Draft PR: Post comments normally
+
+## DEPENDENCIES
+
+# - gh (GitHub CLI) or curl for API calls
+# - jq (version 1.6+)
+# - bash (version 4.0+)
+
+## EXAMPLE USAGE
+
+# export GITHUB_TOKEN="ghp_xxx"
+# export PR_NUMBER=42
+# export GITHUB_REPOSITORY="acme/myrepo"
+# cat comments.json | ./post-comment.sh > results.json
+
+# ./post-comment.sh --input comments.json --pr 42 --repo acme/myrepo
+
+## EXAMPLE INPUT
+
+# [
+#   {
+#     "path": ".gitleaksignore",
+#     "position": 1,
+#     "body": "🔒 **Gitleaks Exclusion Added**...",
+#     "commit_id": "abc123"
+#   }
+# ]
+
+## EXAMPLE OUTPUT
+
+# {
+#   "posted": 1,
+#   "skipped_duplicates": 0,
+#   "errors": 0,
+#   "comments": [
+#     {
+#       "id": 987654321,
+#       "url": "https://github.com/acme/myrepo/pull/42#discussion_r987654321",
+#       "status": "posted",
+#       "body_preview": "🔒 **Gitleaks Exclusion Added**..."
+#     }
+#   ]
+# }
+
+## TESTING HOOKS
+
+# For unit testing, set:
+# - DRY_RUN: Print API calls without executing
+# - MOCK_API_RESPONSE: Read API responses from file instead of calling API
+# - DISABLE_DEDUP: Skip duplicate checking for testing
+
+## SECURITY CONSIDERATIONS
+
+# - Never logs full GITHUB_TOKEN (logs "ghp_***" placeholder)
+# - Uses GitHub CLI for secure API interaction
+# - Validates all inputs before API calls
+# - Quotes all variables to prevent injection
+# - Limits retry attempts to prevent infinite loops

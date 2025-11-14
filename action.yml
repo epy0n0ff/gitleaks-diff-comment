@@ -1,0 +1,35 @@
+name: 'PR Gitleaks Comment Generator'
+description: 'Automatically comment on .gitleaksignore changes in PRs with security context'
+author: 'PR Diff Comment Team'
+
+branding:
+  icon: 'lock'
+  color: 'orange'
+
+inputs:
+  github-token:
+    description: 'GitHub token for API authentication'
+    required: true
+  pr-number:
+    description: 'Pull request number'
+    required: true
+  comment-mode:
+    description: 'Comment mode: "override" to update existing comments, "append" to always create new comments'
+    required: false
+    default: 'override'
+  debug:
+    description: 'Enable debug logging'
+    required: false
+    default: 'false'
+
+outputs:
+  posted:
+    description: 'Number of comments posted'
+  skipped_duplicates:
+    description: 'Number of duplicate comments skipped'
+  errors:
+    description: 'Number of errors encountered'
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
