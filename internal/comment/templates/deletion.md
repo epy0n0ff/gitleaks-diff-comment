@@ -2,7 +2,7 @@
 
 `{{ .FilePattern }}` {{ if .HasLineNumber }}(line {{ .LineNumber }}) {{ end }}will now be scanned by gitleaks.
 
-[View file]({{ .FileLink }})
+{{ .FileLink }}
 
 {{ if .IsPattern }}
 ✅ All files matching this pattern will now be included in security scanning.

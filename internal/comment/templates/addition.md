@@ -2,7 +2,7 @@
 
 `{{ .FilePattern }}` {{ if .HasLineNumber }}(line {{ .LineNumber }}) {{ end }}will be excluded from secret scanning.
 
-[View file]({{ .FileLink }})
+{{ .FileLink }}
 
 {{ if .IsPattern }}
 ⚠️ **Security Note**: This wildcard pattern will match multiple files. All matching files will be excluded from gitleaks scanning.
