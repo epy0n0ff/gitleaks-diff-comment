@@ -30,7 +30,7 @@ Custom GitHub Action structure:
 - [X] T001 Initialize Go module with `go mod init` in repository root (go.mod, go.sum)
 - [X] T002 [P] Create directory structure: cmd/pr-diff-comment/, internal/{diff,comment,github,config}/, tests/{fixtures,integration}/
 - [X] T003 [P] Create action.yml with action metadata (name, description, inputs, runs configuration)
-- [X] T004 [P] Create Dockerfile with multi-stage build (golang:1.24-alpine builder + alpine:3.18 runtime)
+- [X] T004 [P] Create Dockerfile with multi-stage build (golang:1.24-alpine builder + alpine:3.22 runtime)
 - [X] T005 [P] Create .gitignore for Go project (binaries, vendor/, coverage files)
 - [X] T006 [P] Create README.md with action usage instructions and examples
 - [X] T007 [P] Create DEVELOPMENT.md with local development setup and testing guide

@@ -44,7 +44,7 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o pr-diff-comment ./cmd/pr-diff-comment
 
-FROM alpine:3.18
+FROM alpine:3.22
 RUN apk add --no-cache git ca-certificates
 COPY --from=builder /build/pr-diff-comment /usr/local/bin/
 ENTRYPOINT ["/usr/local/bin/pr-diff-comment"]
@@ -326,7 +326,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     ./cmd/pr-diff-comment
 
 # Stage 2: Runtime
-FROM alpine:3.18
+FROM alpine:3.22
 RUN apk add --no-cache git ca-certificates
 
 # Copy only the binary
@@ -354,7 +354,7 @@ ENTRYPOINT ["/usr/local/bin/pr-diff-comment"]
 | GitHub API | google/go-github | v57 | API client |
 | Authentication | golang.org/x/oauth2 | Latest | Token auth |
 | Container | Docker | Multi-stage | Packaging |
-| Base Image | Alpine Linux | 3.18 | Runtime environment |
+| Base Image | Alpine Linux | 3.22 | Runtime environment |
 | Testing | Go testing | Standard lib | Unit tests |
 | Mocking | Interfaces | Native Go | Test doubles |
 | Templates | text/template | Standard lib | Comment generation |
