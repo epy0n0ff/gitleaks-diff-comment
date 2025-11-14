@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Critical: Fixed commit SHA detection for PR comments** - Resolved `422 Validation Failed` error on GitHub Enterprise Server
+  - Issue: Comments were failing with "pull_request_review_thread.end_commit_oid is not part of the pull request"
+  - Root cause: Using `GITHUB_SHA` environment variable which may not point to PR HEAD commit
+  - Solution: Added `commit-sha` input parameter with auto-detection via `git rev-parse HEAD`
+  - Recommended usage: `commit-sha: ${{ github.event.pull_request.head.sha }}`
+  - Backward compatible: Auto-detects correct commit if not specified
+  - Affects: Both GitHub.com and GitHub Enterprise Server installations
+
 ### Added
 - **GitHub Enterprise Server support** - Action now supports GitHub Enterprise Server (GHES) 3.14+ installations
   - New `gh-host` input parameter for enterprise hostname configuration (e.g., `github.company.com`)

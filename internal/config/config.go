@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 )
@@ -46,7 +47,7 @@ func ParseFromEnv() (*Config, error) {
 	cfg := &Config{
 		GitHubToken: os.Getenv("INPUT_GITHUB-TOKEN"),
 		Repository:  os.Getenv("GITHUB_REPOSITORY"),
-		CommitSHA:   os.Getenv("GITHUB_SHA"),
+		CommitSHA:   getCommitSHA(),
 		BaseRef:     os.Getenv("GITHUB_BASE_REF"),
 		HeadRef:     os.Getenv("GITHUB_HEAD_REF"),
 		Workspace:   os.Getenv("GITHUB_WORKSPACE"),
@@ -169,4 +170,26 @@ func (c *Config) Repo() string {
 		return ""
 	}
 	return parts[1]
+}
+
+// getCommitSHA gets the commit SHA to use for PR comments
+// Priority: INPUT_COMMIT-SHA > git rev-parse HEAD > GITHUB_SHA
+func getCommitSHA() string {
+	// First, check if user provided commit-sha input
+	if commitSHA := os.Getenv("INPUT_COMMIT-SHA"); commitSHA != "" {
+		return commitSHA
+	}
+
+	// Try to get actual HEAD commit from git
+	// This is the most reliable method in PR context
+	cmd := exec.Command("git", "rev-parse", "HEAD")
+	if output, err := cmd.Output(); err == nil {
+		headCommit := strings.TrimSpace(string(output))
+		if headCommit != "" {
+			return headCommit
+		}
+	}
+
+	// Fallback to GITHUB_SHA (may not be PR HEAD in some contexts)
+	return os.Getenv("GITHUB_SHA")
 }

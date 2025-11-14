@@ -44,6 +44,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           pr-number: ${{ github.event.pull_request.number }}
+          commit-sha: ${{ github.event.pull_request.head.sha }}
 ```
 
 ### Inputs
@@ -52,6 +53,7 @@ jobs:
 |-------|----------|---------|-------------|
 | `github-token` | Yes | - | GitHub token for API authentication (requires `repo` and `pull_requests:write` scopes) |
 | `pr-number` | Yes | - | Pull request number |
+| `commit-sha` | No | Auto-detected | Commit SHA to attach comments to. Defaults to PR HEAD commit via `git rev-parse HEAD`. Recommended: `${{ github.event.pull_request.head.sha }}` |
 | `comment-mode` | No | `override` | Comment mode: `override` (update existing) or `append` (always create new) |
 | `gh-host` | No | `''` | GitHub Enterprise Server hostname (e.g., `github.company.com`). Leave empty for GitHub.com |
 | `debug` | No | `false` | Enable debug logging |
@@ -221,6 +223,7 @@ Add the `gh-host` input to your workflow:
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     pr-number: ${{ github.event.pull_request.number }}
+    commit-sha: ${{ github.event.pull_request.head.sha }}
     gh-host: github.company.com  # Your enterprise hostname
 ```
 

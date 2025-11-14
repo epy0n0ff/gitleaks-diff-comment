@@ -13,6 +13,10 @@ inputs:
   pr-number:
     description: 'Pull request number'
     required: true
+  commit-sha:
+    description: 'Commit SHA to attach comments to (should be PR HEAD commit). Use ${{ github.event.pull_request.head.sha }}'
+    required: false
+    default: ''
   comment-mode:
     description: 'Comment mode: "override" to update existing comments, "append" to always create new comments'
     required: false
