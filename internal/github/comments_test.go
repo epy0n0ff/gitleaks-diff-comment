@@ -15,6 +15,7 @@ import (
 // MockClient is a mock implementation of the GitHub Client interface
 type MockClient struct {
 	CreateReviewCommentFunc func(ctx context.Context, req *PostCommentRequest) (*PostCommentResponse, error)
+	UpdateReviewCommentFunc func(ctx context.Context, req *UpdateCommentRequest) (*PostCommentResponse, error)
 	ListReviewCommentsFunc  func(ctx context.Context) ([]*ExistingComment, error)
 	CreateIssueCommentFunc  func(ctx context.Context, body string) (*PostCommentResponse, error)
 	CheckRateLimitFunc      func(ctx context.Context) (int, error)
@@ -25,6 +26,13 @@ func (m *MockClient) CreateReviewComment(ctx context.Context, req *PostCommentRe
 		return m.CreateReviewCommentFunc(ctx, req)
 	}
 	return &PostCommentResponse{ID: 123, HTMLURL: "https://github.com/test"}, nil
+}
+
+func (m *MockClient) UpdateReviewComment(ctx context.Context, req *UpdateCommentRequest) (*PostCommentResponse, error) {
+	if m.UpdateReviewCommentFunc != nil {
+		return m.UpdateReviewCommentFunc(ctx, req)
+	}
+	return &PostCommentResponse{ID: req.CommentID, HTMLURL: "https://github.com/test"}, nil
 }
 
 func (m *MockClient) ListReviewComments(ctx context.Context) ([]*ExistingComment, error) {
@@ -95,7 +103,7 @@ func TestPostComments_Concurrency(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	output, err := PostComments(ctx, mockClient, comments, false)
+	output, err := PostComments(ctx, mockClient, comments, "append", false)
 
 	if err != nil {
 		t.Fatalf("PostComments() unexpected error: %v", err)
@@ -143,7 +151,7 @@ func TestPostComments_RateLimitRetry(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	output, err := PostComments(ctx, mockClient, comments, true)
+	output, err := PostComments(ctx, mockClient, comments, "append", true)
 
 	if err != nil {
 		t.Fatalf("PostComments() unexpected error: %v", err)
@@ -182,7 +190,7 @@ func TestPostComments_MaxRetriesExceeded(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	output, err := PostComments(ctx, mockClient, comments, false)
+	output, err := PostComments(ctx, mockClient, comments, "append", false)
 
 	if err != nil {
 		t.Fatalf("PostComments() unexpected error: %v", err)
@@ -228,7 +236,7 @@ func TestPostComments_Deduplication(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	output, err := PostComments(ctx, mockClient, comments, false)
+	output, err := PostComments(ctx, mockClient, comments, "append", false)
 
 	if err != nil {
 		t.Fatalf("PostComments() unexpected error: %v", err)

@@ -25,11 +25,19 @@ type ExistingComment struct {
 	Body     string `json:"body"`
 	Path     string `json:"path"`
 	Position int    `json:"position"`
+	Line     int    `json:"line"`
+	Side     string `json:"side"`
+}
+
+// UpdateCommentRequest represents a request to update an existing comment
+type UpdateCommentRequest struct {
+	CommentID int64  `json:"comment_id"`
+	Body      string `json:"body"`
 }
 
 // CommentResult represents the result of posting a comment
 type CommentResult struct {
-	// Status: "posted", "skipped_duplicate", "error"
+	// Status: "posted", "updated", "skipped_duplicate", "error"
 	Status string `json:"status"`
 
 	// Comment ID if successfully posted

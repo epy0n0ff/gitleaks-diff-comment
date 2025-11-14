@@ -31,6 +31,9 @@ type Config struct {
 	// Workspace directory (git repository root)
 	Workspace string
 
+	// Comment mode: "override" or "append"
+	CommentMode string
+
 	// Enable debug logging
 	Debug bool
 }
@@ -44,6 +47,12 @@ func ParseFromEnv() (*Config, error) {
 		BaseRef:     os.Getenv("GITHUB_BASE_REF"),
 		HeadRef:     os.Getenv("GITHUB_HEAD_REF"),
 		Workspace:   os.Getenv("GITHUB_WORKSPACE"),
+		CommentMode: os.Getenv("INPUT_COMMENT-MODE"),
+	}
+
+	// Default comment mode to "override" if not specified
+	if cfg.CommentMode == "" {
+		cfg.CommentMode = "override"
 	}
 
 	// Parse PR number
@@ -94,6 +103,11 @@ func (c *Config) Validate() error {
 		return errors.New("commit SHA is required (GITHUB_SHA)\n" +
 			"  → Action: This is automatically set by GitHub Actions\n" +
 			"  → Ensure the action is running in a GitHub Actions workflow")
+	}
+	if c.CommentMode != "override" && c.CommentMode != "append" {
+		return fmt.Errorf("comment-mode must be 'override' or 'append', got: %s\n"+
+			"  → Action: Set 'comment-mode' input to either 'override' or 'append'\n"+
+			"  → Example: comment-mode: override", c.CommentMode)
 	}
 	return nil
 }

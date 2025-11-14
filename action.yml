@@ -13,6 +13,10 @@ inputs:
   pr-number:
     description: 'Pull request number'
     required: true
+  comment-mode:
+    description: 'Comment mode: "override" to update existing comments, "append" to always create new comments'
+    required: false
+    default: 'override'
   debug:
     description: 'Enable debug logging'
     required: false

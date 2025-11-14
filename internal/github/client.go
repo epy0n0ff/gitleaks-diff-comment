@@ -13,6 +13,9 @@ type Client interface {
 	// CreateReviewComment posts a line-level review comment on a PR
 	CreateReviewComment(ctx context.Context, req *PostCommentRequest) (*PostCommentResponse, error)
 
+	// UpdateReviewComment updates an existing review comment
+	UpdateReviewComment(ctx context.Context, req *UpdateCommentRequest) (*PostCommentResponse, error)
+
 	// ListReviewComments fetches all review comments for a PR
 	ListReviewComments(ctx context.Context) ([]*ExistingComment, error)
 
@@ -89,6 +92,24 @@ func (c *ClientImpl) CreateReviewComment(ctx context.Context, req *PostCommentRe
 	}, nil
 }
 
+// UpdateReviewComment updates an existing review comment
+func (c *ClientImpl) UpdateReviewComment(ctx context.Context, req *UpdateCommentRequest) (*PostCommentResponse, error) {
+	comment := &github.PullRequestComment{
+		Body: github.String(req.Body),
+	}
+
+	updated, _, err := c.client.PullRequests.EditComment(ctx, c.owner, c.repo, req.CommentID, comment)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PostCommentResponse{
+		ID:        updated.GetID(),
+		HTMLURL:   updated.GetHTMLURL(),
+		CreatedAt: updated.GetCreatedAt().Time,
+	}, nil
+}
+
 // ListReviewComments fetches all review comments for a PR
 func (c *ClientImpl) ListReviewComments(ctx context.Context) ([]*ExistingComment, error) {
 	opts := &github.PullRequestListCommentsOptions{
@@ -110,6 +131,8 @@ func (c *ClientImpl) ListReviewComments(ctx context.Context) ([]*ExistingComment
 				Body:     comment.GetBody(),
 				Path:     comment.GetPath(),
 				Position: comment.GetPosition(),
+				Line:     comment.GetLine(),
+				Side:     comment.GetSide(),
 			})
 		}
 

@@ -12,7 +12,7 @@ import (
 )
 
 // PostComments posts multiple comments concurrently with rate limiting and deduplication
-func PostComments(ctx context.Context, client Client, comments []*comment.GeneratedComment, debug bool) (*ActionOutput, error) {
+func PostComments(ctx context.Context, client Client, comments []*comment.GeneratedComment, commentMode string, debug bool) (*ActionOutput, error) {
 	// Fetch existing comments for deduplication
 	existingComments, err := client.ListReviewComments(ctx)
 	if err != nil {
@@ -27,8 +27,12 @@ func PostComments(ctx context.Context, client Client, comments []*comment.Genera
 		log.Printf("GitHub API rate limit remaining: %d", remaining)
 	}
 
+	if debug {
+		log.Printf("Comment mode: %s", commentMode)
+	}
+
 	// Post comments concurrently with semaphore
-	results := postCommentsConcurrently(ctx, client, comments, existingComments, debug)
+	results := postCommentsConcurrently(ctx, client, comments, existingComments, commentMode, debug)
 
 	// Aggregate results
 	output := &ActionOutput{
@@ -39,6 +43,8 @@ func PostComments(ctx context.Context, client Client, comments []*comment.Genera
 		switch result.Status {
 		case "posted":
 			output.Posted++
+		case "updated":
+			output.Posted++ // Count updates as posted
 		case "skipped_duplicate":
 			output.SkippedDuplicates++
 		case "error":
@@ -54,7 +60,7 @@ func PostComments(ctx context.Context, client Client, comments []*comment.Genera
 }
 
 // postCommentsConcurrently posts comments with controlled concurrency
-func postCommentsConcurrently(ctx context.Context, client Client, comments []*comment.GeneratedComment, existingComments []*ExistingComment, debug bool) []CommentResult {
+func postCommentsConcurrently(ctx context.Context, client Client, comments []*comment.GeneratedComment, existingComments []*ExistingComment, commentMode string, debug bool) []CommentResult {
 	var wg sync.WaitGroup
 	resultChan := make(chan CommentResult, len(comments))
 
@@ -70,19 +76,34 @@ func postCommentsConcurrently(ctx context.Context, client Client, comments []*co
 			semaphore <- struct{}{}
 			defer func() { <-semaphore }()
 
-			// Check for duplicates
-			if isDuplicate(comm, existingComments) {
+			// Check for existing comment at this location
+			existingComment := findExistingComment(comm, existingComments)
+
+			if commentMode == "override" && existingComment != nil {
+				// Override mode: update existing comment
 				if debug {
-					log.Printf("[%d/%d] Skipping duplicate comment at line %d (%s)", idx+1, len(comments), comm.Line, comm.Side)
+					log.Printf("[%d/%d] Updating existing comment at line %d (%s)", idx+1, len(comments), comm.Line, comm.Side)
 				}
-				resultChan <- CommentResult{
-					Status:      "skipped_duplicate",
-					BodyPreview: comm.GetBodyPreview(),
-				}
+				result := updateCommentWithRetry(ctx, client, comm, existingComment.ID, debug, idx+1, len(comments))
+				resultChan <- result
 				return
 			}
 
-			// Post comment with retry logic
+			if commentMode == "append" && existingComment != nil {
+				// Append mode: skip if duplicate exists
+				if isDuplicateContent(comm, existingComment) {
+					if debug {
+						log.Printf("[%d/%d] Skipping duplicate comment at line %d (%s)", idx+1, len(comments), comm.Line, comm.Side)
+					}
+					resultChan <- CommentResult{
+						Status:      "skipped_duplicate",
+						BodyPreview: comm.GetBodyPreview(),
+					}
+					return
+				}
+			}
+
+			// Post new comment with retry logic
 			result := postCommentWithRetry(ctx, client, comm, debug, idx+1, len(comments))
 			resultChan <- result
 		}(i, c)
@@ -185,21 +206,103 @@ func postCommentWithRetry(ctx context.Context, client Client, comm *comment.Gene
 	}
 }
 
-// isDuplicate checks if a comment already exists
-func isDuplicate(newComment *comment.GeneratedComment, existingComments []*ExistingComment) bool {
-	for _, existing := range existingComments {
-		// Check if path and position match
-		if existing.Path == newComment.Path && existing.Position == newComment.Position {
-			// Check if body is similar (normalize whitespace)
-			existingBody := normalizeWhitespace(existing.Body)
-			newBody := normalizeWhitespace(newComment.Body)
+// findExistingComment finds an existing comment at the same location using the marker
+func findExistingComment(newComment *comment.GeneratedComment, existingComments []*ExistingComment) *ExistingComment {
+	// Extract marker from new comment body
+	marker := extractMarker(newComment.Body)
+	if marker == "" {
+		return nil
+	}
 
-			if existingBody == newBody {
-				return true
-			}
+	// Find comment with matching marker
+	for _, existing := range existingComments {
+		if extractMarker(existing.Body) == marker {
+			return existing
 		}
 	}
-	return false
+
+	return nil
+}
+
+// extractMarker extracts the marker from comment body
+// Marker format: <!-- gitleaks-diff-comment: {path}:{line}:{side} -->
+func extractMarker(body string) string {
+	start := strings.Index(body, "<!-- gitleaks-diff-comment: ")
+	if start == -1 {
+		return ""
+	}
+	end := strings.Index(body[start:], " -->")
+	if end == -1 {
+		return ""
+	}
+	return body[start : start+end+4] // Include " -->"
+}
+
+// isDuplicateContent checks if comment content is duplicate (for append mode)
+func isDuplicateContent(newComment *comment.GeneratedComment, existingComment *ExistingComment) bool {
+	// Normalize whitespace for comparison
+	existingBody := normalizeWhitespace(existingComment.Body)
+	newBody := normalizeWhitespace(newComment.Body)
+	return existingBody == newBody
+}
+
+// updateCommentWithRetry updates a comment with exponential backoff retry
+func updateCommentWithRetry(ctx context.Context, client Client, comm *comment.GeneratedComment, commentID int64, debug bool, idx, total int) CommentResult {
+	req := &UpdateCommentRequest{
+		CommentID: commentID,
+		Body:      comm.Body,
+	}
+
+	maxRetries := 3
+	delays := []time.Duration{1 * time.Second, 2 * time.Second, 4 * time.Second}
+
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		if attempt > 0 {
+			if debug {
+				log.Printf("[%d/%d] Retry attempt %d after %v", idx, total, attempt, delays[attempt-1])
+			}
+			time.Sleep(delays[attempt-1])
+		}
+
+		resp, err := client.UpdateReviewComment(ctx, req)
+		if err != nil {
+			// Check if this is a rate limit error
+			if strings.Contains(err.Error(), "rate limit") || strings.Contains(err.Error(), "abuse") {
+				if attempt < maxRetries {
+					log.Printf("[%d/%d] Rate limit hit, retrying...", idx, total)
+					continue
+				}
+			}
+
+			// Final failure
+			if debug {
+				log.Printf("[%d/%d] Failed to update comment: %v", idx, total, err)
+			}
+			return CommentResult{
+				Status:      "error",
+				Error:       err.Error(),
+				BodyPreview: comm.GetBodyPreview(),
+			}
+		}
+
+		// Success
+		if debug {
+			log.Printf("[%d/%d] Updated comment at line %d (%s): %s", idx, total, comm.Line, comm.Side, resp.HTMLURL)
+		}
+		return CommentResult{
+			Status:      "updated",
+			CommentID:   resp.ID,
+			CommentURL:  resp.HTMLURL,
+			BodyPreview: comm.GetBodyPreview(),
+		}
+	}
+
+	// Should not reach here, but handle gracefully
+	return CommentResult{
+		Status:      "error",
+		Error:       "max retries exceeded",
+		BodyPreview: comm.GetBodyPreview(),
+	}
 }
 
 // normalizeWhitespace normalizes whitespace for comparison

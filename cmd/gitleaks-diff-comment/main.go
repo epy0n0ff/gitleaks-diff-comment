@@ -126,7 +126,7 @@ func run() error {
 
 	// Post comments
 	ctx := context.Background()
-	output, err := github.PostComments(ctx, client, comments, cfg.Debug)
+	output, err := github.PostComments(ctx, client, comments, cfg.CommentMode, cfg.Debug)
 	if err != nil {
 		return fmt.Errorf("failed to post comments: %w", err)
 	}
