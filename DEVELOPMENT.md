@@ -4,7 +4,7 @@ This guide covers local development, testing, and contributing to the PR Gitleak
 
 ## Prerequisites
 
-- Go 1.24 or later
+- Go 1.25 or later
 - Docker
 - Git
 - GitHub account with a test repository
