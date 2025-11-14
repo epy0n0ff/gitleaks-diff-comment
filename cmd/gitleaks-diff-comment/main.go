@@ -50,12 +50,12 @@ func run() error {
 
 	// Parse diff to find .gitleaksignore changes
 	if cfg.Debug {
-		log.Println("Parsing .gitleaksignore diff...")
+		log.Printf("Parsing .gitleaksignore diff (base: %s, head: %s)...", cfg.BaseRef, cfg.HeadRef)
 	}
 
 	changes, err := diff.ParseGitleaksDiff(cfg.BaseRef, cfg.HeadRef)
 	if err != nil {
-		return fmt.Errorf("failed to parse diff: %w", err)
+		return fmt.Errorf("failed to parse diff (base: %s, head: %s): %w", cfg.BaseRef, cfg.HeadRef, err)
 	}
 
 	if len(changes) == 0 {

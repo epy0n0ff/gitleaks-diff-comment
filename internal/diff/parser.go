@@ -12,19 +12,52 @@ import (
 
 // ParseGitleaksDiff parses git diff output for .gitleaksignore
 func ParseGitleaksDiff(baseBranch, headRef string) ([]DiffChange, error) {
-	// Execute git diff command
-	cmd := exec.Command("git", "diff", baseBranch+"..."+headRef, "--", ".gitleaksignore")
-	output, err := cmd.Output()
-	if err != nil {
-		// If the command fails, it might be because there are no changes
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			// Exit code 1 with empty output means no changes
-			if len(exitErr.Stderr) == 0 && len(output) == 0 {
-				return []DiffChange{}, nil
-			}
-		}
-		return nil, fmt.Errorf("git diff command failed: %w", err)
+	// Try multiple strategies to get the diff
+	strategies := []struct {
+		name    string
+		baseRef string
+		headRef string
+	}{
+		// Strategy 1: origin/base...HEAD (standard PR diff)
+		{"origin/base...HEAD", "origin/" + baseBranch, "HEAD"},
+		// Strategy 2: base...HEAD (if origin/ doesn't exist)
+		{"base...HEAD", baseBranch, "HEAD"},
+		// Strategy 3: HEAD^...HEAD (fallback for single-commit PRs)
+		{"HEAD^...HEAD", "HEAD^", "HEAD"},
 	}
+
+	var lastErr error
+	for _, strategy := range strategies {
+		if strategy.baseRef == "origin/" || strategy.baseRef == "" {
+			continue // skip if base branch is empty
+		}
+
+		cmd := exec.Command("git", "diff", strategy.baseRef+"..."+strategy.headRef, "--", ".gitleaksignore")
+		output, err := cmd.CombinedOutput()
+
+		if err == nil {
+			// Success! Parse the output
+			return parseDiffOutput(output)
+		}
+
+		// Save error for later
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			lastErr = fmt.Errorf("strategy '%s' failed (exit %d): %s", strategy.name, exitErr.ExitCode(), string(output))
+		} else {
+			lastErr = fmt.Errorf("strategy '%s' failed: %w", strategy.name, err)
+		}
+	}
+
+	// All strategies failed
+	if lastErr != nil {
+		return nil, fmt.Errorf("all git diff strategies failed, last error: %w", lastErr)
+	}
+
+	return nil, fmt.Errorf("unable to determine diff strategy (base: %s, head: %s)", baseBranch, headRef)
+}
+
+// parseDiffOutput parses the git diff output
+func parseDiffOutput(output []byte) ([]DiffChange, error) {
 
 	// If output is empty, no changes to .gitleaksignore
 	if len(output) == 0 {
