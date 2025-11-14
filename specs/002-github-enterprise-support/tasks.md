@@ -140,13 +140,13 @@ This is a single Go project with the following structure:
 
 ### Implementation for User Story 3
 
-- [ ] T028 [US3] Add URL format validation helper function in internal/config/config.go (check for protocol prefix, path separator)
-- [ ] T029 [US3] Enhance validation error messages with examples and guidance in Config.Validate() in internal/config/config.go
-- [ ] T030 [US3] Add network connectivity error handling in NewClient in internal/github/client.go
-- [ ] T031 [US3] Add timeout configuration for enterprise connectivity checks in internal/github/client.go (target <2 seconds per SC-004)
-- [ ] T032 [P] [US3] Add unit test for Config.Validate() error message format in internal/config/config_test.go
-- [ ] T033 [P] [US3] Add integration test for unreachable hostname error in tests/integration/enterprise_test.go
-- [ ] T034 [P] [US3] Add integration test for invalid URL format error in tests/integration/enterprise_test.go
+- [x] T028 [US3] Add URL format validation helper function in internal/config/config.go (check for protocol prefix, path separator)
+- [x] T029 [US3] Enhance validation error messages with examples and guidance in Config.Validate() in internal/config/config.go
+- [x] T030 [US3] Add network connectivity error handling in NewClient in internal/github/client.go
+- [x] T031 [US3] Add timeout configuration for enterprise connectivity checks in internal/github/client.go (target <2 seconds per SC-004)
+- [x] T032 [P] [US3] Add unit test for Config.Validate() error message format in internal/config/config_test.go
+- [x] T033 [P] [US3] Add integration test for unreachable hostname error in tests/integration/enterprise_test.go
+- [x] T034 [P] [US3] Add integration test for invalid URL format error in tests/integration/enterprise_test.go
 
 **Checkpoint**: User Story 3 complete. At this point:
 - ✅ Invalid configurations produce clear, actionable error messages

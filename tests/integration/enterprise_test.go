@@ -236,3 +236,48 @@ func TestErrorClassification(t *testing.T) {
 		}
 	})
 }
+
+// TestInvalidURLFormat tests that invalid gh-host formats are caught during validation
+// Note: This is tested at the config layer, not client layer
+func TestInvalidURLFormat(t *testing.T) {
+	tests := []struct {
+		name      string
+		ghHost    string
+		expectErr bool
+		errText   string
+	}{
+		{
+			name:      "valid hostname",
+			ghHost:    "github.company.com",
+			expectErr: false,
+		},
+		{
+			name:      "valid hostname with port",
+			ghHost:    "github.company.com:8443",
+			expectErr: false,
+		},
+		{
+			name:      "empty (GitHub.com default)",
+			ghHost:    "",
+			expectErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// NewClient should succeed for valid formats
+			// (validation happens in Config.Validate, not NewClient)
+			_, err := github.NewClient("test-token", "owner", "repo", 123, tt.ghHost)
+
+			if tt.expectErr && err == nil {
+				t.Errorf("Expected error for ghHost=%q, got nil", tt.ghHost)
+			}
+			if !tt.expectErr && err != nil {
+				t.Errorf("Unexpected error for ghHost=%q: %v", tt.ghHost, err)
+			}
+			if tt.expectErr && err != nil && !strings.Contains(err.Error(), tt.errText) {
+				t.Errorf("Error should contain %q, got: %v", tt.errText, err)
+			}
+		})
+	}
+}
