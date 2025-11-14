@@ -17,8 +17,10 @@ func ParseGitleaksDiff(baseBranch, headRef string) ([]DiffChange, error) {
 	checkOutput, _ := checkCmd.Output()
 	if len(checkOutput) == 0 {
 		// File doesn't exist in the repository
+		fmt.Printf("DEBUG: .gitleaksignore not tracked by git\n")
 		return []DiffChange{}, nil
 	}
+	fmt.Printf("DEBUG: .gitleaksignore found in git: %s\n", strings.TrimSpace(string(checkOutput)))
 
 	// Build list of diff strategies to try
 	var strategies [][]string
@@ -56,20 +58,38 @@ func ParseGitleaksDiff(baseBranch, headRef string) ([]DiffChange, error) {
 	var lastOutput []byte
 	var successCount int
 
+	fmt.Printf("DEBUG: Trying %d strategies for base=%s, head=%s\n", len(strategies), baseBranch, headRef)
+
 	for i, args := range strategies {
 		cmd := exec.Command("git", args...)
 		output, err := cmd.CombinedOutput()
 
+		fmt.Printf("DEBUG: Strategy %d: git %v\n", i+1, args)
+		fmt.Printf("DEBUG: Output length: %d bytes, Error: %v\n", len(output), err)
+
 		if err == nil {
 			successCount++
+			fmt.Printf("DEBUG: Strategy %d succeeded, parsing output...\n", i+1)
+			if len(output) > 0 {
+				previewLen := 200
+				if len(output) < previewLen {
+					previewLen = len(output)
+				}
+				fmt.Printf("DEBUG: Output preview (first %d chars): %s\n", previewLen, string(output[:previewLen]))
+			}
+
 			// Success! Parse the output
 			result, parseErr := parseDiffOutput(output)
 			if parseErr == nil && len(result) > 0 {
+				fmt.Printf("DEBUG: Found %d changes!\n", len(result))
 				return result, nil
 			}
 			// If parsing succeeded but no results, continue trying other strategies
 			if parseErr != nil {
+				fmt.Printf("DEBUG: Parse error: %v\n", parseErr)
 				lastErr = fmt.Errorf("strategy %d (%v) parse failed: %w", i+1, args, parseErr)
+			} else {
+				fmt.Printf("DEBUG: Parse succeeded but 0 results\n")
 			}
 			continue
 		}
@@ -83,12 +103,20 @@ func ParseGitleaksDiff(baseBranch, headRef string) ([]DiffChange, error) {
 		}
 	}
 
-	// If at least one strategy succeeded but found no changes, that's OK
+	// If at least one strategy succeeded (command ran without error)
+	// but no changes were found, this could mean:
+	// 1. The file truly hasn't changed (legitimate case)
+	// 2. All strategies returned empty output (potential issue)
+
+	fmt.Printf("DEBUG: Completed all strategies. Success count: %d, last error: %v\n", successCount, lastErr)
+
+	// If at least one strategy succeeded without error, treat as "no changes"
 	if successCount > 0 {
+		fmt.Printf("DEBUG: Returning empty result (no changes detected)\n")
 		return []DiffChange{}, nil
 	}
 
-	// All strategies failed
+	// All strategies failed with errors
 	if lastErr != nil {
 		if len(lastOutput) > 0 {
 			return nil, fmt.Errorf("all %d git diff strategies failed, last error: %w (output: %s)", len(strategies), lastErr, string(lastOutput))
@@ -96,7 +124,8 @@ func ParseGitleaksDiff(baseBranch, headRef string) ([]DiffChange, error) {
 		return nil, fmt.Errorf("all %d git diff strategies failed, last error: %w", len(strategies), lastErr)
 	}
 
-	// No changes found
+	// No strategies were attempted (shouldn't happen)
+	fmt.Printf("DEBUG: No strategies attempted, returning empty\n")
 	return []DiffChange{}, nil
 }
 
