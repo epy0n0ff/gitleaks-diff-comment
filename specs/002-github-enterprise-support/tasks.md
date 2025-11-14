@@ -70,17 +70,17 @@ This is a single Go project with the following structure:
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Implement enterprise URL construction logic in NewClient() in internal/github/client.go (prepend https://, call WithEnterpriseURLs)
-- [ ] T012 [US1] Add error handling for WithEnterpriseURLs failure in internal/github/client.go
-- [ ] T013 [US1] Add debug logging for gh-host value and computed API URL in NewClient() in internal/github/client.go
-- [ ] T014 [US1] Update existing unit tests for NewClient in internal/github/client_test.go to pass empty string for ghHost
-- [ ] T015 [P] [US1] Add unit test for NewClient with GitHub.com (empty gh-host) in internal/github/client_test.go
-- [ ] T016 [P] [US1] Add unit test for NewClient with enterprise hostname in internal/github/client_test.go
-- [ ] T017 [P] [US1] Add unit test for NewClient with enterprise hostname and port in internal/github/client_test.go
-- [ ] T018 [P] [US1] Add unit test for Config.Validate() with valid gh-host in internal/config/config_test.go
-- [ ] T019 [P] [US1] Add unit test for Config.Validate() rejecting gh-host with protocol in internal/config/config_test.go
-- [ ] T020 [P] [US1] Add unit test for Config.Validate() rejecting gh-host with path in internal/config/config_test.go
-- [ ] T021 [P] [US1] Add unit test for Config.Validate() with port number validation in internal/config/config_test.go
+- [x] T011 [US1] Implement enterprise URL construction logic in NewClient() in internal/github/client.go (prepend https://, call WithEnterpriseURLs)
+- [x] T012 [US1] Add error handling for WithEnterpriseURLs failure in internal/github/client.go
+- [x] T013 [US1] Add debug logging for gh-host value and computed API URL in NewClient() in internal/github/client.go
+- [x] T014 [US1] Update existing unit tests for NewClient in internal/github/client_test.go to pass empty string for ghHost
+- [x] T015 [P] [US1] Add unit test for NewClient with GitHub.com (empty gh-host) in internal/github/client_test.go
+- [x] T016 [P] [US1] Add unit test for NewClient with enterprise hostname in internal/github/client_test.go
+- [x] T017 [P] [US1] Add unit test for NewClient with enterprise hostname and port in internal/github/client_test.go
+- [x] T018 [P] [US1] Add unit test for Config.Validate() with valid gh-host in internal/config/config_test.go
+- [x] T019 [P] [US1] Add unit test for Config.Validate() rejecting gh-host with protocol in internal/config/config_test.go
+- [x] T020 [P] [US1] Add unit test for Config.Validate() rejecting gh-host with path in internal/config/config_test.go
+- [x] T021 [P] [US1] Add unit test for Config.Validate() with port number validation in internal/config/config_test.go
 
 **Checkpoint**: User Story 1 MVP complete. At this point:
 - ✅ gh-host parameter added to action.yml
