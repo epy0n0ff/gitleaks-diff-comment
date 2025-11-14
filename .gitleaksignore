@@ -1,0 +1,3 @@
+# Test gitleaks ignore file
+config/secrets.yml:23
+database/*.env

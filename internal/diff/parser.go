@@ -12,44 +12,62 @@ import (
 
 // ParseGitleaksDiff parses git diff output for .gitleaksignore
 func ParseGitleaksDiff(baseBranch, headRef string) ([]DiffChange, error) {
+	// First, check if .gitleaksignore file exists
+	checkCmd := exec.Command("git", "ls-files", ".gitleaksignore")
+	checkOutput, _ := checkCmd.Output()
+	if len(checkOutput) == 0 {
+		// File doesn't exist in the repository
+		return []DiffChange{}, nil
+	}
+
 	// Build list of diff strategies to try
 	var strategies [][]string
 
-	// Strategy 1: origin/base..HEAD (two-dot, shows changes between branches)
+	// Try to use merge-base to find common ancestor
 	if baseBranch != "" {
+		// Try finding merge-base with origin/base
+		mergeBaseCmd := exec.Command("git", "merge-base", "origin/"+baseBranch, "HEAD")
+		if mergeBase, err := mergeBaseCmd.Output(); err == nil && len(mergeBase) > 0 {
+			baseCommit := strings.TrimSpace(string(mergeBase))
+			strategies = append(strategies, []string{"diff", baseCommit + "..HEAD", "--", ".gitleaksignore"})
+		}
+
+		// Standard PR strategies
 		strategies = append(strategies, []string{"diff", "origin/" + baseBranch + "..HEAD", "--", ".gitleaksignore"})
-	}
-
-	// Strategy 2: base..HEAD (without origin/ prefix)
-	if baseBranch != "" {
-		strategies = append(strategies, []string{"diff", baseBranch + "..HEAD", "--", ".gitleaksignore"})
-	}
-
-	// Strategy 3: origin/base...HEAD (three-dot, shows changes since common ancestor)
-	if baseBranch != "" {
 		strategies = append(strategies, []string{"diff", "origin/" + baseBranch + "...HEAD", "--", ".gitleaksignore"})
 	}
 
-	// Strategy 4: HEAD~1..HEAD (single commit diff)
-	strategies = append(strategies, []string{"diff", "HEAD~1..HEAD", "--", ".gitleaksignore"})
+	// Try with FETCH_HEAD (GitHub Actions sets this)
+	strategies = append(strategies, []string{"diff", "FETCH_HEAD..HEAD", "--", ".gitleaksignore"})
 
-	// Strategy 5: Simple HEAD diff (uncommitted changes)
-	strategies = append(strategies, []string{"diff", "HEAD", "--", ".gitleaksignore"})
+	// Try refs/remotes/origin/main pattern
+	if baseBranch != "" {
+		strategies = append(strategies, []string{"diff", "refs/remotes/origin/" + baseBranch + "..HEAD", "--", ".gitleaksignore"})
+	}
+
+	// Single commit strategies
+	strategies = append(strategies, []string{"diff", "HEAD~1..HEAD", "--", ".gitleaksignore"})
+	strategies = append(strategies, []string{"diff", "HEAD~1", "HEAD", "--", ".gitleaksignore"})
+
+	// Use git log -p as a fallback (shows full history with diffs)
+	strategies = append(strategies, []string{"log", "-p", "-1", "--", ".gitleaksignore"})
 
 	var lastErr error
 	var lastOutput []byte
+	var successCount int
 
 	for i, args := range strategies {
 		cmd := exec.Command("git", args...)
 		output, err := cmd.CombinedOutput()
 
 		if err == nil {
+			successCount++
 			// Success! Parse the output
 			result, parseErr := parseDiffOutput(output)
 			if parseErr == nil && len(result) > 0 {
 				return result, nil
 			}
-			// If parsing failed or no results, try next strategy
+			// If parsing succeeded but no results, continue trying other strategies
 			if parseErr != nil {
 				lastErr = fmt.Errorf("strategy %d (%v) parse failed: %w", i+1, args, parseErr)
 			}
@@ -65,9 +83,14 @@ func ParseGitleaksDiff(baseBranch, headRef string) ([]DiffChange, error) {
 		}
 	}
 
-	// All strategies failed or returned no results
+	// If at least one strategy succeeded but found no changes, that's OK
+	if successCount > 0 {
+		return []DiffChange{}, nil
+	}
+
+	// All strategies failed
 	if lastErr != nil {
-		return nil, fmt.Errorf("all git diff strategies failed, last error: %w (output: %s)", lastErr, string(lastOutput))
+		return nil, fmt.Errorf("all %d git diff strategies failed, last error: %w", len(strategies), lastErr)
 	}
 
 	// No changes found
