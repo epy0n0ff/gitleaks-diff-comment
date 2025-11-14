@@ -112,8 +112,15 @@ func (e *GitleaksEntry) FileLink(repo, commitSHA string) string {
 		if path == "." {
 			path = ""
 		}
+		return fmt.Sprintf("https://github.com/%s/blob/%s/%s", repo, commitSHA, path)
 	}
 
+	// For specific files with line numbers, create a permalink to that line
+	if e.HasLineNumber() {
+		return fmt.Sprintf("https://github.com/%s/blob/%s/%s#L%d", repo, commitSHA, path, e.LineNumber)
+	}
+
+	// Default: link to the file
 	return fmt.Sprintf("https://github.com/%s/blob/%s/%s", repo, commitSHA, path)
 }
 
