@@ -1,6 +1,6 @@
 module github.com/epy0n0ff/gitleaks-diff-comment
 
-go 1.21
+go 1.24
 
 require (
 	github.com/google/go-github/v57 v57.0.0

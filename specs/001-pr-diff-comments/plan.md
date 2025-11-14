@@ -13,7 +13,7 @@
 
 ## Technical Context
 
-**Language/Version**: Go 1.21+
+**Language/Version**: Go 1.24+
 **Primary Dependencies**:
 - github.com/google/go-github/v57 (GitHub API client)
 - golang.org/x/oauth2 (GitHub authentication)
