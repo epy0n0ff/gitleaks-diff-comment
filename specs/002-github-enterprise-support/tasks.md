@@ -29,10 +29,10 @@ This is a single Go project with the following structure:
 
 **Purpose**: Prepare development environment and ensure existing tests pass
 
-- [ ] T001 Verify Go 1.25 environment and dependencies in go.mod
-- [ ] T002 [P] Run existing tests to establish baseline (go test ./...)
-- [ ] T003 [P] Create tests/integration/ directory for new enterprise integration tests
-- [ ] T004 [P] Review contracts/action-input.yml and contracts/github-client.md for implementation requirements
+- [x] T001 Verify Go 1.25 environment and dependencies in go.mod
+- [x] T002 [P] Run existing tests to establish baseline (go test ./...)
+- [x] T003 [P] Create tests/integration/ directory for new enterprise integration tests
+- [x] T004 [P] Review contracts/action-input.yml and contracts/github-client.md for implementation requirements
 
 ---
 
