@@ -40,6 +40,15 @@ type Config struct {
 
 	// GitHub Enterprise Server hostname (empty = GitHub.com)
 	GHHost string
+
+	// Command is the command to execute (e.g., "clear" or empty for normal mode)
+	Command string
+
+	// CommentID is the comment ID that triggered the command
+	CommentID int64
+
+	// Requester is the GitHub username who requested the command
+	Requester string
 }
 
 // ParseFromEnv parses configuration from environment variables
@@ -74,6 +83,20 @@ func ParseFromEnv() (*Config, error) {
 	debugStr := os.Getenv("INPUT_DEBUG")
 	cfg.Debug = strings.ToLower(debugStr) == "true"
 
+	// Parse command-related fields (optional, for command mode)
+	cfg.Command = os.Getenv("INPUT_COMMAND")
+	cfg.Requester = os.Getenv("INPUT_REQUESTER")
+
+	// Parse comment ID (optional, for command mode)
+	commentIDStr := os.Getenv("INPUT_COMMENT-ID")
+	if commentIDStr != "" {
+		commentID, err := strconv.ParseInt(commentIDStr, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid comment ID: %w", err)
+		}
+		cfg.CommentID = commentID
+	}
+
 	// Validate configuration
 	if err := cfg.Validate(); err != nil {
 		return nil, err
@@ -105,7 +128,8 @@ func (c *Config) Validate() error {
 			"  → Action: Check GITHUB_REPOSITORY environment variable\n"+
 			"  → Expected format: owner/repository-name", c.Repository)
 	}
-	if c.CommitSHA == "" {
+	// CommitSHA is only required in normal mode (not in command mode)
+	if !c.IsCommandMode() && c.CommitSHA == "" {
 		return errors.New("commit SHA is required (GITHUB_SHA)\n" +
 			"  → Action: This is automatically set by GitHub Actions\n" +
 			"  → Ensure the action is running in a GitHub Actions workflow")
@@ -170,6 +194,11 @@ func (c *Config) Repo() string {
 		return ""
 	}
 	return parts[1]
+}
+
+// IsCommandMode returns true if the action is running in command mode
+func (c *Config) IsCommandMode() bool {
+	return c.Command != ""
 }
 
 // getCommitSHA gets the commit SHA to use for PR comments

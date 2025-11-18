@@ -27,6 +27,21 @@ type Client interface {
 
 	// CheckRateLimit returns remaining API calls
 	CheckRateLimit(ctx context.Context) (int, error)
+
+	// ListPRComments fetches all issue comments for a PR
+	ListPRComments(ctx context.Context) ([]*github.IssueComment, error)
+
+	// ListPRReviewComments fetches all review comments (diff comments) for a PR
+	ListPRReviewComments(ctx context.Context) ([]*github.PullRequestComment, error)
+
+	// DeleteComment deletes an issue comment by ID
+	DeleteComment(ctx context.Context, commentID int64) error
+
+	// DeleteReviewComment deletes a review comment by ID
+	DeleteReviewComment(ctx context.Context, commentID int64) error
+
+	// CheckUserPermission checks if a user has required permissions (write/admin/maintain)
+	CheckUserPermission(ctx context.Context, username string) (bool, string, error)
 }
 
 // ClientImpl is the concrete implementation using go-github
@@ -259,4 +274,122 @@ func (c *ClientImpl) CheckRateLimit(ctx context.Context) (int, error) {
 	// The go-github library automatically parses X-RateLimit-* headers
 	// from both GitHub.com and GitHub Enterprise Server responses
 	return rate.Core.Remaining, nil
+}
+
+// ListPRComments fetches all issue comments for a pull request
+// PR comments are actually issue comments in the GitHub API
+func (c *ClientImpl) ListPRComments(ctx context.Context) ([]*github.IssueComment, error) {
+	opts := &github.IssueListCommentsOptions{
+		ListOptions: github.ListOptions{
+			PerPage: 100, // Maximum allowed per page
+		},
+	}
+
+	var allComments []*github.IssueComment
+
+	for {
+		comments, resp, err := c.client.Issues.ListComments(ctx, c.owner, c.repo, c.prNumber, opts)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list comments: %w", err)
+		}
+
+		allComments = append(allComments, comments...)
+
+		// Check if there are more pages
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+	}
+
+	return allComments, nil
+}
+
+// ListPRReviewComments fetches all review comments (diff comments) for a pull request
+// These are the comments posted on specific lines of code in the diff
+func (c *ClientImpl) ListPRReviewComments(ctx context.Context) ([]*github.PullRequestComment, error) {
+	opts := &github.PullRequestListCommentsOptions{
+		ListOptions: github.ListOptions{
+			PerPage: 100,
+		},
+	}
+
+	var allComments []*github.PullRequestComment
+
+	for {
+		comments, resp, err := c.client.PullRequests.ListComments(ctx, c.owner, c.repo, c.prNumber, opts)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list review comments: %w", err)
+		}
+
+		allComments = append(allComments, comments...)
+
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+	}
+
+	return allComments, nil
+}
+
+// DeleteComment deletes an issue comment by ID
+// Handles 404 errors gracefully (comment already deleted)
+func (c *ClientImpl) DeleteComment(ctx context.Context, commentID int64) error {
+	_, err := c.client.Issues.DeleteComment(ctx, c.owner, c.repo, commentID)
+	if err != nil {
+		// Check if it's a 404 (comment already deleted)
+		if strings.Contains(err.Error(), "404") {
+			// Not an error - comment is already gone
+			return nil
+		}
+		return fmt.Errorf("failed to delete comment %d: %w", commentID, err)
+	}
+	return nil
+}
+
+// DeleteReviewComment deletes a review comment by ID
+// Handles 404 errors gracefully (comment already deleted)
+func (c *ClientImpl) DeleteReviewComment(ctx context.Context, commentID int64) error {
+	_, err := c.client.PullRequests.DeleteComment(ctx, c.owner, c.repo, commentID)
+	if err != nil {
+		// Check if it's a 404 (comment already deleted)
+		if strings.Contains(err.Error(), "404") {
+			// Not an error - comment is already gone
+			return nil
+		}
+		return fmt.Errorf("failed to delete review comment %d: %w", commentID, err)
+	}
+	return nil
+}
+
+// CheckUserPermission checks if a user has the required permissions to execute commands
+// Returns: (authorized bool, permissionLevel string, error)
+// Allowed permission levels: write, admin, maintain
+func (c *ClientImpl) CheckUserPermission(ctx context.Context, username string) (bool, string, error) {
+	// Get user's permission level for the repository
+	permission, _, err := c.client.Repositories.GetPermissionLevel(ctx, c.owner, c.repo, username)
+	if err != nil {
+		// Check if it's a 404 (user is not a collaborator)
+		if strings.Contains(err.Error(), "404") {
+			return false, "none", nil
+		}
+		return false, "", fmt.Errorf("failed to check permission for user %s: %w", username, err)
+	}
+
+	permissionLevel := permission.GetPermission()
+
+	// Define allowed permission levels
+	// write: collaborator with push access
+	// admin: repository administrator
+	// maintain: maintainer role (GitHub Enterprise feature)
+	allowedLevels := map[string]bool{
+		"write":    true,
+		"admin":    true,
+		"maintain": true,
+	}
+
+	isAuthorized := allowedLevels[permissionLevel]
+
+	return isAuthorized, permissionLevel, nil
 }

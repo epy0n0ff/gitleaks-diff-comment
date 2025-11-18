@@ -9,7 +9,86 @@ import (
 	"time"
 
 	"github.com/epy0n0ff/gitleaks-diff-comment/internal/comment"
+	"github.com/google/go-github/v57/github"
 )
+
+// IsBotComment checks if a comment was created by the gitleaks-diff-comment bot
+// It uses two identification methods:
+// 1. Primary: Check for invisible HTML marker in comment body
+// 2. Fallback: Check if comment author is "github-actions[bot]"
+func IsBotComment(comment *github.IssueComment) bool {
+	if comment == nil {
+		return false
+	}
+
+	body := comment.GetBody()
+
+	// Primary: Check for invisible marker
+	// All bot comments include: <!-- gitleaks-diff-comment: ... -->
+	if strings.Contains(body, "<!-- gitleaks-diff-comment:") {
+		return true
+	}
+
+	// Fallback: Check comment author
+	// Handles old comments that may not have the marker
+	if comment.GetUser().GetLogin() == "github-actions[bot]" {
+		return true
+	}
+
+	return false
+}
+
+// FilterBotComments separates bot comments from human comments
+// Returns only comments that were created by the gitleaks-diff-comment bot
+func FilterBotComments(comments []*github.IssueComment) []*github.IssueComment {
+	var botComments []*github.IssueComment
+
+	for _, comment := range comments {
+		if IsBotComment(comment) {
+			botComments = append(botComments, comment)
+		}
+	}
+
+	return botComments
+}
+
+// IsBotReviewComment checks if a review comment was created by the gitleaks-diff-comment bot
+// Review comments are the diff comments posted on specific lines of code
+func IsBotReviewComment(comment *github.PullRequestComment) bool {
+	if comment == nil {
+		return false
+	}
+
+	body := comment.GetBody()
+
+	// Primary: Check for invisible marker
+	// All bot comments include: <!-- gitleaks-diff-comment: ... -->
+	if strings.Contains(body, "<!-- gitleaks-diff-comment:") {
+		return true
+	}
+
+	// Fallback: Check comment author
+	// Handles old comments that may not have the marker
+	if comment.GetUser().GetLogin() == "github-actions[bot]" {
+		return true
+	}
+
+	return false
+}
+
+// FilterBotReviewComments separates bot review comments from human review comments
+// Returns only review comments that were created by the gitleaks-diff-comment bot
+func FilterBotReviewComments(comments []*github.PullRequestComment) []*github.PullRequestComment {
+	var botComments []*github.PullRequestComment
+
+	for _, comment := range comments {
+		if IsBotReviewComment(comment) {
+			botComments = append(botComments, comment)
+		}
+	}
+
+	return botComments
+}
 
 // PostComments posts multiple comments concurrently with rate limiting and deduplication
 func PostComments(ctx context.Context, client Client, comments []*comment.GeneratedComment, commentMode string, debug bool) (*ActionOutput, error) {
