@@ -84,13 +84,32 @@ func NewClearCommand(prNumber int, requestedBy string, commentID int64, client g
 }
 
 // Execute runs the clear command
-// 1. Fetch all PR comments
-// 2. Filter to bot comments only
-// 3. Delete each bot comment
-// 4. Track results and errors
+// 1. Check user permissions
+// 2. Fetch all PR comments
+// 3. Filter to bot comments only
+// 4. Delete each bot comment
+// 5. Track results and errors
 func (c *ClearCommand) Execute(ctx context.Context) error {
 	c.Operation.Status = "running"
 	log.Printf("::notice::Starting clear command for PR #%d (requested by %s)", c.PRNumber, c.RequestedBy)
+
+	// Check user permissions
+	authorized, permissionLevel, err := c.Client.CheckUserPermission(ctx, c.RequestedBy)
+	if err != nil {
+		c.Operation.Status = "failed"
+		c.Operation.Errors = append(c.Operation.Errors, err.Error())
+		return fmt.Errorf("failed to check permissions: %w", err)
+	}
+
+	if !authorized {
+		c.Operation.Status = "failed"
+		errUnauth := NewErrUnauthorized(c.RequestedBy, permissionLevel)
+		c.Operation.Errors = append(c.Operation.Errors, errUnauth.Error())
+		c.finalize()
+		return errUnauth
+	}
+
+	log.Printf("::notice::Permission check passed: %s has %s access", c.RequestedBy, permissionLevel)
 
 	// Fetch all comments for the PR
 	comments, err := c.Client.ListPRComments(ctx)

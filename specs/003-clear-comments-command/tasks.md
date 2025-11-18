@@ -92,16 +92,16 @@ This is a single Go project with the following structure:
 
 ### Permission Verification
 
-- [ ] T025 [P] [US2] Create Authorization struct with fields (Username, PermissionLevel, IsAuthorized, Reason) in /workspace/internal/commands/types.go
-- [ ] T026 [US2] Implement CheckUserPermission method using GitHub API GetPermissionLevel in /workspace/internal/github/client.go
-- [ ] T027 [US2] Add permission level validation logic (allow write/admin/maintain) in /workspace/internal/github/client.go
+- [x] T025 [P] [US2] Create Authorization struct with fields (Username, PermissionLevel, IsAuthorized, Reason) in /workspace/internal/commands/types.go
+- [x] T026 [US2] Implement CheckUserPermission method using GitHub API GetPermissionLevel in /workspace/internal/github/client.go
+- [x] T027 [US2] Add permission level validation logic (allow write/admin/maintain) in /workspace/internal/github/client.go
 - [ ] T028 [P] [US2] Add unit tests for CheckUserPermission covering all permission levels in /workspace/tests/unit/commands/authorization_test.go
 
 ### Integration with Clear Command
 
-- [ ] T029 [US2] Add permission check at start of ClearCommand.Execute in /workspace/internal/commands/clear.go
-- [ ] T030 [US2] Create ErrUnauthorized error type with descriptive message in /workspace/internal/commands/errors.go
-- [ ] T031 [US2] Update main.go to handle ErrUnauthorized and output appropriate error message in /workspace/cmd/gitleaks-diff-comment/main.go
+- [x] T029 [US2] Add permission check at start of ClearCommand.Execute in /workspace/internal/commands/clear.go
+- [x] T030 [US2] Create ErrUnauthorized error type with descriptive message in /workspace/internal/commands/errors.go
+- [x] T031 [US2] Update main.go to handle ErrUnauthorized and output appropriate error message in /workspace/cmd/gitleaks-diff-comment/main.go
 - [ ] T032 [P] [US2] Add integration test for unauthorized user attempting clear command in /workspace/tests/integration/authorization_test.go
 
 ---

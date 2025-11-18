@@ -33,6 +33,9 @@ type Client interface {
 
 	// DeleteComment deletes a comment by ID
 	DeleteComment(ctx context.Context, commentID int64) error
+
+	// CheckUserPermission checks if a user has required permissions (write/admin/maintain)
+	CheckUserPermission(ctx context.Context, username string) (bool, string, error)
 }
 
 // ClientImpl is the concrete implementation using go-github
@@ -309,4 +312,35 @@ func (c *ClientImpl) DeleteComment(ctx context.Context, commentID int64) error {
 		return fmt.Errorf("failed to delete comment %d: %w", commentID, err)
 	}
 	return nil
+}
+
+// CheckUserPermission checks if a user has the required permissions to execute commands
+// Returns: (authorized bool, permissionLevel string, error)
+// Allowed permission levels: write, admin, maintain
+func (c *ClientImpl) CheckUserPermission(ctx context.Context, username string) (bool, string, error) {
+	// Get user's permission level for the repository
+	permission, _, err := c.client.Repositories.GetPermissionLevel(ctx, c.owner, c.repo, username)
+	if err != nil {
+		// Check if it's a 404 (user is not a collaborator)
+		if strings.Contains(err.Error(), "404") {
+			return false, "none", nil
+		}
+		return false, "", fmt.Errorf("failed to check permission for user %s: %w", username, err)
+	}
+
+	permissionLevel := permission.GetPermission()
+
+	// Define allowed permission levels
+	// write: collaborator with push access
+	// admin: repository administrator
+	// maintain: maintainer role (GitHub Enterprise feature)
+	allowedLevels := map[string]bool{
+		"write":    true,
+		"admin":    true,
+		"maintain": true,
+	}
+
+	isAuthorized := allowedLevels[permissionLevel]
+
+	return isAuthorized, permissionLevel, nil
 }

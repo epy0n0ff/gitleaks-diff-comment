@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -80,7 +81,18 @@ func runCommand(cfg *config.Config) error {
 // runClearCommand executes the clear command to delete all bot comments
 func runClearCommand(ctx context.Context, cfg *config.Config, client github.Client) error {
 	cmd := commands.NewClearCommand(cfg.PRNumber, cfg.Requester, cfg.CommentID, client)
-	return cmd.Execute(ctx)
+	err := cmd.Execute(ctx)
+
+	// Handle unauthorized error with detailed message
+	if err != nil {
+		var errUnauth *commands.ErrUnauthorized
+		if errors.As(err, &errUnauth) {
+			log.Printf("::error::%s", err.Error())
+			return fmt.Errorf("unauthorized: %s", errUnauth.Username)
+		}
+	}
+
+	return err
 }
 
 // runDiffCommentMode handles the original diff commenting functionality
