@@ -111,22 +111,23 @@ func (c *ClearCommand) Execute(ctx context.Context) error {
 
 	log.Printf("::notice::Permission check passed: %s has %s access", c.RequestedBy, permissionLevel)
 
-	// Fetch all comments for the PR
-	comments, err := c.Client.ListPRComments(ctx)
+	// Fetch all review comments (diff comments) for the PR
+	// These are the comments posted on specific lines of code
+	reviewComments, err := c.Client.ListPRReviewComments(ctx)
 	if err != nil {
 		c.Operation.Status = "failed"
 		c.Operation.Errors = append(c.Operation.Errors, err.Error())
 		c.finalize()
 		c.logMetricsOnError()
-		log.Printf("::error::Failed to fetch comments: %v", err)
-		return fmt.Errorf("failed to fetch comments: %w", err)
+		log.Printf("::error::Failed to fetch review comments: %v", err)
+		return fmt.Errorf("failed to fetch review comments: %w", err)
 	}
 
 	// Filter to bot comments only
-	botComments := github.FilterBotComments(comments)
+	botComments := github.FilterBotReviewComments(reviewComments)
 	c.Operation.CommentsFound = len(botComments)
 
-	log.Printf("::notice::Found %d bot comments to delete", len(botComments))
+	log.Printf("::notice::Found %d bot review comments to delete", len(botComments))
 
 	if len(botComments) == 0 {
 		c.Operation.Status = "completed"
@@ -210,13 +211,13 @@ func (c *ClearCommand) logMetricsOnError() {
 	}
 }
 
-// deleteCommentWithRetry deletes a comment with exponential backoff retry
+// deleteCommentWithRetry deletes a review comment with exponential backoff retry
 // Returns (retryAttempts, error)
 func (c *ClearCommand) deleteCommentWithRetry(ctx context.Context, commentID int64) (int, error) {
 	maxRetries := 3
 
 	retries, err := github.RetryWithBackoff(func() error {
-		return c.Client.DeleteComment(ctx, commentID)
+		return c.Client.DeleteReviewComment(ctx, commentID)
 	}, maxRetries)
 
 	// Log retry attempts if any occurred

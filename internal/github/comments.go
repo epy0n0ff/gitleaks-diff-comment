@@ -52,6 +52,44 @@ func FilterBotComments(comments []*github.IssueComment) []*github.IssueComment {
 	return botComments
 }
 
+// IsBotReviewComment checks if a review comment was created by the gitleaks-diff-comment bot
+// Review comments are the diff comments posted on specific lines of code
+func IsBotReviewComment(comment *github.PullRequestComment) bool {
+	if comment == nil {
+		return false
+	}
+
+	body := comment.GetBody()
+
+	// Primary: Check for invisible marker
+	// All bot comments include: <!-- gitleaks-diff-comment: ... -->
+	if strings.Contains(body, "<!-- gitleaks-diff-comment:") {
+		return true
+	}
+
+	// Fallback: Check comment author
+	// Handles old comments that may not have the marker
+	if comment.GetUser().GetLogin() == "github-actions[bot]" {
+		return true
+	}
+
+	return false
+}
+
+// FilterBotReviewComments separates bot review comments from human review comments
+// Returns only review comments that were created by the gitleaks-diff-comment bot
+func FilterBotReviewComments(comments []*github.PullRequestComment) []*github.PullRequestComment {
+	var botComments []*github.PullRequestComment
+
+	for _, comment := range comments {
+		if IsBotReviewComment(comment) {
+			botComments = append(botComments, comment)
+		}
+	}
+
+	return botComments
+}
+
 // PostComments posts multiple comments concurrently with rate limiting and deduplication
 func PostComments(ctx context.Context, client Client, comments []*comment.GeneratedComment, commentMode string, debug bool) (*ActionOutput, error) {
 	// Fetch existing comments for deduplication

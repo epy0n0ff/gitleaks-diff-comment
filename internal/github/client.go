@@ -31,8 +31,14 @@ type Client interface {
 	// ListPRComments fetches all issue comments for a PR
 	ListPRComments(ctx context.Context) ([]*github.IssueComment, error)
 
-	// DeleteComment deletes a comment by ID
+	// ListPRReviewComments fetches all review comments (diff comments) for a PR
+	ListPRReviewComments(ctx context.Context) ([]*github.PullRequestComment, error)
+
+	// DeleteComment deletes an issue comment by ID
 	DeleteComment(ctx context.Context, commentID int64) error
+
+	// DeleteReviewComment deletes a review comment by ID
+	DeleteReviewComment(ctx context.Context, commentID int64) error
 
 	// CheckUserPermission checks if a user has required permissions (write/admin/maintain)
 	CheckUserPermission(ctx context.Context, username string) (bool, string, error)
@@ -299,6 +305,34 @@ func (c *ClientImpl) ListPRComments(ctx context.Context) ([]*github.IssueComment
 	return allComments, nil
 }
 
+// ListPRReviewComments fetches all review comments (diff comments) for a pull request
+// These are the comments posted on specific lines of code in the diff
+func (c *ClientImpl) ListPRReviewComments(ctx context.Context) ([]*github.PullRequestComment, error) {
+	opts := &github.PullRequestListCommentsOptions{
+		ListOptions: github.ListOptions{
+			PerPage: 100,
+		},
+	}
+
+	var allComments []*github.PullRequestComment
+
+	for {
+		comments, resp, err := c.client.PullRequests.ListComments(ctx, c.owner, c.repo, c.prNumber, opts)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list review comments: %w", err)
+		}
+
+		allComments = append(allComments, comments...)
+
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+	}
+
+	return allComments, nil
+}
+
 // DeleteComment deletes an issue comment by ID
 // Handles 404 errors gracefully (comment already deleted)
 func (c *ClientImpl) DeleteComment(ctx context.Context, commentID int64) error {
@@ -310,6 +344,21 @@ func (c *ClientImpl) DeleteComment(ctx context.Context, commentID int64) error {
 			return nil
 		}
 		return fmt.Errorf("failed to delete comment %d: %w", commentID, err)
+	}
+	return nil
+}
+
+// DeleteReviewComment deletes a review comment by ID
+// Handles 404 errors gracefully (comment already deleted)
+func (c *ClientImpl) DeleteReviewComment(ctx context.Context, commentID int64) error {
+	_, err := c.client.PullRequests.DeleteComment(ctx, c.owner, c.repo, commentID)
+	if err != nil {
+		// Check if it's a 404 (comment already deleted)
+		if strings.Contains(err.Error(), "404") {
+			// Not an error - comment is already gone
+			return nil
+		}
+		return fmt.Errorf("failed to delete review comment %d: %w", commentID, err)
 	}
 	return nil
 }
