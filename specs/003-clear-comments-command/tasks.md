@@ -59,25 +59,25 @@ This is a single Go project with the following structure:
 
 ### Comment Identification
 
-- [ ] T011 [P] [US1] Create IsBotComment function to check for invisible marker in /workspace/internal/github/comments.go
-- [ ] T012 [P] [US1] Add fallback bot author detection (github-actions[bot]) in IsBotComment function in /workspace/internal/github/comments.go
-- [ ] T013 [P] [US1] Implement FilterBotComments function to separate bot comments from human comments in /workspace/internal/github/comments.go
-- [ ] T014 [P] [US1] Add unit tests for IsBotComment and FilterBotComments in /workspace/tests/unit/commands/comments_test.go
+- [x] T011 [P] [US1] Create IsBotComment function to check for invisible marker in /workspace/internal/github/comments.go
+- [x] T012 [P] [US1] Add fallback bot author detection (github-actions[bot]) in IsBotComment function in /workspace/internal/github/comments.go
+- [x] T013 [P] [US1] Implement FilterBotComments function to separate bot comments from human comments in /workspace/internal/github/comments.go
+- [x] T014 [P] [US1] Add unit tests for IsBotComment and FilterBotComments in /workspace/tests/unit/commands/comments_test.go
 
 ### Comment Deletion
 
-- [ ] T015 [US1] Add DeleteComment method to GitHub client in /workspace/internal/github/client.go
-- [ ] T016 [US1] Implement ListPRComments method to fetch all comments for a PR in /workspace/internal/github/client.go
-- [ ] T017 [US1] Create ClearOperation struct to track execution state in /workspace/internal/commands/clear.go
-- [ ] T018 [US1] Implement ClearCommand.Execute method with comment fetching, filtering, and deletion loop in /workspace/internal/commands/clear.go
-- [ ] T019 [US1] Add error handling for 404 Not Found (comment already deleted) in /workspace/internal/commands/clear.go
+- [x] T015 [US1] Add DeleteComment method to GitHub client in /workspace/internal/github/client.go
+- [x] T016 [US1] Implement ListPRComments method to fetch all comments for a PR in /workspace/internal/github/client.go
+- [x] T017 [US1] Create ClearOperation struct to track execution state in /workspace/internal/commands/clear.go
+- [x] T018 [US1] Implement ClearCommand.Execute method with comment fetching, filtering, and deletion loop in /workspace/internal/commands/clear.go
+- [x] T019 [US1] Add error handling for 404 Not Found (comment already deleted) in /workspace/internal/commands/clear.go
 - [ ] T020 [P] [US1] Add unit tests for ClearCommand.Execute with mocked GitHub client in /workspace/tests/unit/commands/clear_test.go
 
 ### Integration
 
-- [ ] T021 [US1] Create GitHub Actions workflow file for issue_comment event trigger at /workspace/.github/workflows/clear-command.yml
-- [ ] T022 [US1] Add workflow job with permissions (pull-requests: write, issues: write) in /workspace/.github/workflows/clear-command.yml
-- [ ] T023 [US1] Add workflow step to execute clear command with environment variables in /workspace/.github/workflows/clear-command.yml
+- [x] T021 [US1] Create GitHub Actions workflow file for issue_comment event trigger at /workspace/.github/workflows/clear-command.yml
+- [x] T022 [US1] Add workflow job with permissions (pull-requests: write, issues: write) in /workspace/.github/workflows/clear-command.yml
+- [x] T023 [US1] Add workflow step to execute clear command with environment variables in /workspace/.github/workflows/clear-command.yml
 - [ ] T024 [P] [US1] Create integration test that simulates full clear flow in /workspace/tests/integration/clear_command_test.go
 
 ---

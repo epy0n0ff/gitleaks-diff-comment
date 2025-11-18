@@ -1,0 +1,159 @@
+package commands
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/epy0n0ff/gitleaks-diff-comment/internal/github"
+)
+
+// ClearOperation tracks the execution state of a clear command
+type ClearOperation struct {
+	// CommandID is a unique identifier for this operation
+	CommandID string
+
+	// PRNumber is the pull request number
+	PRNumber int
+
+	// RequestedBy is the user who initiated the operation
+	RequestedBy string
+
+	// StartedAt is the operation start timestamp
+	StartedAt time.Time
+
+	// CompletedAt is the operation completion timestamp (nil if in progress)
+	CompletedAt time.Time
+
+	// Status is the operation status (pending/running/completed/failed)
+	Status string
+
+	// CommentsFound is the total bot comments found
+	CommentsFound int
+
+	// CommentsDeleted is the number of successfully deleted comments
+	CommentsDeleted int
+
+	// CommentsFailed is the number of failed deletion attempts
+	CommentsFailed int
+
+	// Errors is a list of error messages encountered
+	Errors []string
+
+	// RetryCount is the number of retry attempts made
+	RetryCount int
+
+	// Duration is the total operation time in seconds
+	Duration float64
+}
+
+// ClearCommand handles the execution of a /clear command
+type ClearCommand struct {
+	// PRNumber is the pull request to clear comments from
+	PRNumber int
+
+	// RequestedBy is the GitHub username who requested the command
+	RequestedBy string
+
+	// CommentID is the comment ID that triggered this command
+	CommentID int64
+
+	// Client is the GitHub API client
+	Client github.Client
+
+	// Operation tracks execution state
+	Operation *ClearOperation
+}
+
+// NewClearCommand creates a new clear command instance
+func NewClearCommand(prNumber int, requestedBy string, commentID int64, client github.Client) *ClearCommand {
+	return &ClearCommand{
+		PRNumber:    prNumber,
+		RequestedBy: requestedBy,
+		CommentID:   commentID,
+		Client:      client,
+		Operation: &ClearOperation{
+			CommandID:   fmt.Sprintf("clear-%d-%d", prNumber, time.Now().Unix()),
+			PRNumber:    prNumber,
+			RequestedBy: requestedBy,
+			StartedAt:   time.Now(),
+			Status:      "pending",
+		},
+	}
+}
+
+// Execute runs the clear command
+// 1. Fetch all PR comments
+// 2. Filter to bot comments only
+// 3. Delete each bot comment
+// 4. Track results and errors
+func (c *ClearCommand) Execute(ctx context.Context) error {
+	c.Operation.Status = "running"
+	log.Printf("::notice::Starting clear command for PR #%d (requested by %s)", c.PRNumber, c.RequestedBy)
+
+	// Fetch all comments for the PR
+	comments, err := c.Client.ListPRComments(ctx)
+	if err != nil {
+		c.Operation.Status = "failed"
+		c.Operation.Errors = append(c.Operation.Errors, err.Error())
+		return fmt.Errorf("failed to fetch comments: %w", err)
+	}
+
+	// Filter to bot comments only
+	botComments := github.FilterBotComments(comments)
+	c.Operation.CommentsFound = len(botComments)
+
+	log.Printf("::notice::Found %d bot comments to delete", len(botComments))
+
+	if len(botComments) == 0 {
+		c.Operation.Status = "completed"
+		c.finalize()
+		log.Println("::notice::No bot comments found to delete")
+		return nil
+	}
+
+	// Delete each bot comment
+	for _, comment := range botComments {
+		commentID := comment.GetID()
+
+		err := c.Client.DeleteComment(ctx, commentID)
+		if err != nil {
+			// Log error but continue with other comments
+			errMsg := fmt.Sprintf("Failed to delete comment %d: %v", commentID, err)
+			log.Printf("::warning::%s", errMsg)
+			c.Operation.Errors = append(c.Operation.Errors, errMsg)
+			c.Operation.CommentsFailed++
+		} else {
+			log.Printf("::notice::Deleted comment %d", commentID)
+			c.Operation.CommentsDeleted++
+		}
+	}
+
+	// Finalize operation
+	if c.Operation.CommentsFailed > 0 {
+		c.Operation.Status = "completed" // Partial success is still completion
+	} else {
+		c.Operation.Status = "completed"
+	}
+
+	c.finalize()
+
+	// Report results
+	if c.Operation.CommentsFailed > 0 {
+		log.Printf("::notice::✓ Cleared %d comments with %d failures in %.2fs",
+			c.Operation.CommentsDeleted, c.Operation.CommentsFailed, c.Operation.Duration)
+		return fmt.Errorf("completed with %d failures", c.Operation.CommentsFailed)
+	}
+
+	log.Printf("::notice::✓ Successfully cleared %d comments in %.2fs",
+		c.Operation.CommentsDeleted, c.Operation.Duration)
+
+	return nil
+}
+
+// finalize completes the operation and calculates duration
+func (c *ClearCommand) finalize() {
+	c.Operation.CompletedAt = time.Now()
+	c.Operation.Duration = c.Operation.CompletedAt.Sub(c.Operation.StartedAt).Seconds()
+}

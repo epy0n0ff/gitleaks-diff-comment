@@ -27,6 +27,12 @@ type Client interface {
 
 	// CheckRateLimit returns remaining API calls
 	CheckRateLimit(ctx context.Context) (int, error)
+
+	// ListPRComments fetches all issue comments for a PR
+	ListPRComments(ctx context.Context) ([]*github.IssueComment, error)
+
+	// DeleteComment deletes a comment by ID
+	DeleteComment(ctx context.Context, commentID int64) error
 }
 
 // ClientImpl is the concrete implementation using go-github
@@ -259,4 +265,48 @@ func (c *ClientImpl) CheckRateLimit(ctx context.Context) (int, error) {
 	// The go-github library automatically parses X-RateLimit-* headers
 	// from both GitHub.com and GitHub Enterprise Server responses
 	return rate.Core.Remaining, nil
+}
+
+// ListPRComments fetches all issue comments for a pull request
+// PR comments are actually issue comments in the GitHub API
+func (c *ClientImpl) ListPRComments(ctx context.Context) ([]*github.IssueComment, error) {
+	opts := &github.IssueListCommentsOptions{
+		ListOptions: github.ListOptions{
+			PerPage: 100, // Maximum allowed per page
+		},
+	}
+
+	var allComments []*github.IssueComment
+
+	for {
+		comments, resp, err := c.client.Issues.ListComments(ctx, c.owner, c.repo, c.prNumber, opts)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list comments: %w", err)
+		}
+
+		allComments = append(allComments, comments...)
+
+		// Check if there are more pages
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+	}
+
+	return allComments, nil
+}
+
+// DeleteComment deletes an issue comment by ID
+// Handles 404 errors gracefully (comment already deleted)
+func (c *ClientImpl) DeleteComment(ctx context.Context, commentID int64) error {
+	_, err := c.client.Issues.DeleteComment(ctx, c.owner, c.repo, commentID)
+	if err != nil {
+		// Check if it's a 404 (comment already deleted)
+		if strings.Contains(err.Error(), "404") {
+			// Not an error - comment is already gone
+			return nil
+		}
+		return fmt.Errorf("failed to delete comment %d: %w", commentID, err)
+	}
+	return nil
 }

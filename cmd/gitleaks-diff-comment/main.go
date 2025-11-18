@@ -9,6 +9,7 @@ import (
 	"os/exec"
 
 	"github.com/epy0n0ff/gitleaks-diff-comment/internal/comment"
+	"github.com/epy0n0ff/gitleaks-diff-comment/internal/commands"
 	"github.com/epy0n0ff/gitleaks-diff-comment/internal/config"
 	"github.com/epy0n0ff/gitleaks-diff-comment/internal/diff"
 	"github.com/epy0n0ff/gitleaks-diff-comment/internal/github"
@@ -60,13 +61,26 @@ func run() error {
 
 // runCommand handles command execution (e.g., /clear)
 func runCommand(cfg *config.Config) error {
+	ctx := context.Background()
+
+	// Create GitHub API client
+	client, err := github.NewClient(cfg.GitHubToken, cfg.Owner(), cfg.Repo(), cfg.PRNumber, cfg.GHHost)
+	if err != nil {
+		return fmt.Errorf("failed to create GitHub client: %w", err)
+	}
+
 	switch cfg.Command {
 	case "clear":
-		// TODO: Implement clear command in Phase 3
-		return fmt.Errorf("clear command not yet implemented (coming in Phase 3)")
+		return runClearCommand(ctx, cfg, client)
 	default:
 		return fmt.Errorf("unknown command: %s", cfg.Command)
 	}
+}
+
+// runClearCommand executes the clear command to delete all bot comments
+func runClearCommand(ctx context.Context, cfg *config.Config, client github.Client) error {
+	cmd := commands.NewClearCommand(cfg.PRNumber, cfg.Requester, cfg.CommentID, client)
+	return cmd.Execute(ctx)
 }
 
 // runDiffCommentMode handles the original diff commenting functionality
