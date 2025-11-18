@@ -13,7 +13,61 @@ Automatically add explanatory comments to GitHub pull requests when `.gitleaksig
 
 ## Usage
 
-### Basic Setup
+### Combined Workflow (Recommended)
+
+Create a single workflow file `.github/workflows/gitleaks-comment.yml` with both comment and clear jobs:
+
+```yaml
+name: Gitleaks Diff Comment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.gitleaksignore'
+  issue_comment:
+    types: [created]
+
+permissions:
+  pull-requests: write
+  contents: read
+  issues: write
+
+jobs:
+  # Post diff comments when .gitleaksignore changes
+  comment:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-number: ${{ github.event.pull_request.number }}
+          commit-sha: ${{ github.event.pull_request.head.sha }}
+
+  # Clear bot comments with /clear command
+  clear:
+    if: |
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '@github-actions') &&
+      contains(github.event.comment.body, '/clear')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-number: ${{ github.event.issue.number }}
+          command: clear
+          comment-id: ${{ github.event.comment.id }}
+          requester: ${{ github.event.comment.user.login }}
+```
+
+### Basic Setup (Comment Only)
 
 Create a workflow file (e.g., `.github/workflows/pr-gitleaks-comment.yml`):
 
@@ -74,7 +128,10 @@ You can clear all bot-generated comments from a PR by posting a comment with the
 @github-actions /clear
 ```
 
-**Setup**: Create `.github/workflows/clear-command.yml` on your default branch (main):
+**Setup Options**:
+
+1. **Recommended**: Use the [Combined Workflow](#combined-workflow-recommended) shown above
+2. **Alternative**: Create a separate `.github/workflows/clear-command.yml` on your default branch (main):
 
 ```yaml
 name: Clear Comments Command

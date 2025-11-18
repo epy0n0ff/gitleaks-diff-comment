@@ -1,0 +1,77 @@
+name: Gitleaks Diff Comment
+
+# Trigger on both pull request events and issue comments
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.gitleaksignore'
+  issue_comment:
+    types: [created]
+
+# Required permissions for both jobs
+permissions:
+  pull-requests: write  # Required to post/delete comments on PRs
+  contents: read        # Required to checkout and read repository files
+  issues: write         # Required for clear command (issue comments)
+
+jobs:
+  # Job 1: Post diff comments when .gitleaksignore changes
+  comment:
+    # Only run on pull_request events (not issue_comment events)
+    if: github.event_name == 'pull_request'
+
+    runs-on: ubuntu-latest
+    name: Comment on .gitleaksignore changes
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for diff comparison
+
+      - name: Comment on .gitleaksignore changes
+        uses: ./
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-number: ${{ github.event.pull_request.number }}
+          commit-sha: ${{ github.event.pull_request.head.sha }}
+          debug: 'false'
+
+  # Job 2: Clear bot comments when /clear command is posted
+  clear:
+    # Only run on issue_comment events with /clear command
+    if: |
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '@github-actions') &&
+      contains(github.event.comment.body, '/clear')
+
+    runs-on: ubuntu-latest
+    name: Clear bot comments
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Execute clear command
+        id: clear
+        uses: ./
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-number: ${{ github.event.issue.number }}
+          command: clear
+          comment-id: ${{ github.event.comment.id }}
+          requester: ${{ github.event.comment.user.login }}
+          # Enterprise Server support (optional)
+          # gh-host: github.company.com
+
+      - name: Add job summary
+        if: always()
+        run: |
+          echo "## Clear Comments Command Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**PR**: #${{ github.event.issue.number }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Requested by**: @${{ github.event.comment.user.login }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check the workflow logs above for detailed execution metrics." >> $GITHUB_STEP_SUMMARY
