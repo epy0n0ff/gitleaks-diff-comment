@@ -49,6 +49,29 @@ func run() error {
 		log.Printf("Configuration: PR=%d, Repo=%s, Commit=%s", cfg.PRNumber, cfg.Repository, cfg.CommitSHA)
 	}
 
+	// Route to command handler if in command mode
+	if cfg.IsCommandMode() {
+		return runCommand(cfg)
+	}
+
+	// Otherwise, run normal diff comment mode
+	return runDiffCommentMode(cfg)
+}
+
+// runCommand handles command execution (e.g., /clear)
+func runCommand(cfg *config.Config) error {
+	switch cfg.Command {
+	case "clear":
+		// TODO: Implement clear command in Phase 3
+		return fmt.Errorf("clear command not yet implemented (coming in Phase 3)")
+	default:
+		return fmt.Errorf("unknown command: %s", cfg.Command)
+	}
+}
+
+// runDiffCommentMode handles the original diff commenting functionality
+func runDiffCommentMode(cfg *config.Config) error {
+
 	// Change to workspace directory if specified
 	if cfg.Workspace != "" {
 		if err := os.Chdir(cfg.Workspace); err != nil {

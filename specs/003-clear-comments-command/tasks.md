@@ -40,12 +40,12 @@ This is a single Go project with the following structure:
 
 **Purpose**: Build command detection and routing infrastructure needed by all user stories
 
-- [ ] T005 Create Command struct with fields (Type, IssueNumber, CommentID, RequestedBy, Raw) in /workspace/internal/commands/types.go
-- [ ] T006 [P] Implement DetectCommand function with case-insensitive regex pattern matching in /workspace/internal/commands/detector.go
-- [ ] T007 [P] Add unit tests for DetectCommand covering case variations and edge cases in /workspace/tests/unit/commands/detector_test.go
-- [ ] T008 Update Config struct to include Command field in /workspace/internal/config/config.go
-- [ ] T009 Add command-line flag parsing (--command, --pr-number, --comment-id, --requester) in /workspace/cmd/gitleaks-diff-comment/main.go
-- [ ] T010 Implement command routing logic to dispatch to clear handler in /workspace/cmd/gitleaks-diff-comment/main.go
+- [x] T005 Create Command struct with fields (Type, IssueNumber, CommentID, RequestedBy, Raw) in /workspace/internal/commands/types.go
+- [x] T006 [P] Implement DetectCommand function with case-insensitive regex pattern matching in /workspace/internal/commands/detector.go
+- [x] T007 [P] Add unit tests for DetectCommand covering case variations and edge cases in /workspace/tests/unit/commands/detector_test.go
+- [x] T008 Update Config struct to include Command field in /workspace/internal/config/config.go
+- [x] T009 Add command-line flag parsing (--command, --pr-number, --comment-id, --requester) in /workspace/cmd/gitleaks-diff-comment/main.go
+- [x] T010 Implement command routing logic to dispatch to clear handler in /workspace/cmd/gitleaks-diff-comment/main.go
 
 ---
 
