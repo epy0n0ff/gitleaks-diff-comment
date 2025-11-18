@@ -29,10 +29,10 @@ This is a single Go project with the following structure:
 
 **Purpose**: Prepare development environment and create shared command infrastructure
 
-- [ ] T001 Create internal/commands package directory structure at /workspace/internal/commands/
-- [ ] T002 [P] Create tests/unit/commands directory for command unit tests at /workspace/tests/unit/commands/
-- [ ] T003 [P] Create tests/integration directory if not exists at /workspace/tests/integration/
-- [ ] T004 [P] Create tests/fixtures directory for test data at /workspace/tests/fixtures/
+- [x] T001 Create internal/commands package directory structure at /workspace/internal/commands/
+- [x] T002 [P] Create tests/unit/commands directory for command unit tests at /workspace/tests/unit/commands/
+- [x] T003 [P] Create tests/integration directory if not exists at /workspace/tests/integration/
+- [x] T004 [P] Create tests/fixtures directory for test data at /workspace/tests/fixtures/
 
 ---
 
