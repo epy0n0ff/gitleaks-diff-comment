@@ -151,7 +151,8 @@ func parseDiffOutput(output []byte) ([]DiffChange, error) {
 
 	var changes []DiffChange
 	scanner := bufio.NewScanner(bytes.NewReader(output))
-	lineNum := 0
+	oldLineNum := 0 // Line number in the old file (for deletions)
+	newLineNum := 0 // Line number in the new file (for additions)
 	position := 0
 
 	// Regex to parse hunk headers: @@ -old_start,old_count +new_start,new_count @@
@@ -163,8 +164,10 @@ func parseDiffOutput(output []byte) ([]DiffChange, error) {
 
 		// Check for hunk header
 		if matches := hunkRegex.FindStringSubmatch(line); matches != nil {
-			// matches[3] is the new file starting line number
-			lineNum, _ = strconv.Atoi(matches[3])
+			// matches[1] is the old file starting line number (for LEFT side/deletions)
+			// matches[3] is the new file starting line number (for RIGHT side/additions)
+			oldLineNum, _ = strconv.Atoi(matches[1])
+			newLineNum, _ = strconv.Atoi(matches[3])
 			continue
 		}
 
@@ -176,7 +179,7 @@ func parseDiffOutput(output []byte) ([]DiffChange, error) {
 			continue
 		}
 
-		// Handle additions
+		// Handle additions (lines added in new file)
 		if strings.HasPrefix(line, "+") && !strings.HasPrefix(line, "+++") {
 			content := strings.TrimPrefix(line, "+")
 			content = strings.TrimSpace(content)
@@ -186,29 +189,32 @@ func parseDiffOutput(output []byte) ([]DiffChange, error) {
 				changes = append(changes, DiffChange{
 					FilePath:   ".gitleaksignore",
 					Operation:  OperationAddition,
-					LineNumber: lineNum,
+					LineNumber: newLineNum, // Use new file line number for additions
 					Content:    content,
 					Position:   position,
 				})
 			}
-			lineNum++
+			newLineNum++ // Increment new file line counter
 		} else if strings.HasPrefix(line, "-") && !strings.HasPrefix(line, "---") {
-			// Handle deletions
+			// Handle deletions (lines removed from old file)
 			content := strings.TrimPrefix(line, "-")
 			content = strings.TrimSpace(content)
 
 			// Skip empty lines and comments
 			if content != "" && !strings.HasPrefix(content, "#") {
 				changes = append(changes, DiffChange{
-					FilePath:  ".gitleaksignore",
-					Operation: OperationDeletion,
-					Content:   content,
-					Position:  position,
+					FilePath:   ".gitleaksignore",
+					Operation:  OperationDeletion,
+					LineNumber: oldLineNum, // Use old file line number for deletions
+					Content:    content,
+					Position:   position,
 				})
 			}
+			oldLineNum++ // Increment old file line counter
 		} else if !strings.HasPrefix(line, "\\") {
-			// Context lines (no change)
-			lineNum++
+			// Context lines (no change) - increment both counters
+			newLineNum++
+			oldLineNum++
 		}
 	}
 
