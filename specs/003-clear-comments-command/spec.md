@@ -12,6 +12,8 @@
 - Q: When the `/clear` command is executed and GitHub API rate limits are exceeded, how should the system respond? → A: Retry with exponential backoff (up to 3 attempts), then fail gracefully with clear error message
 - Q: How should the system deliver feedback about the clear operation results to the user? → A: Only through GitHub Actions logs/workflow output (user must check workflow run)
 - Q: When multiple users post `/clear` commands simultaneously on the same PR, how should race conditions be handled? → A: Each request processes independently; if comments already deleted, report 0 cleared
+- Q: What operational metrics should be tracked for monitoring and debugging the clear command feature? → A: Execution count
+- Q: Should the `/clear` command be case-sensitive? → A: No, accept `/clear`, `/Clear`, `/CLEAR`, etc. (case-insensitive)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -32,6 +34,7 @@ As a pull request author or maintainer, I want to clear all existing gitleaks-di
 2. **Given** a PR has bot comments and human comments, **When** a user posts "@github-actions /clear", **Then** only bot comments are deleted and human comments remain
 3. **Given** a PR has no bot comments, **When** a user posts "@github-actions /clear", **Then** the action completes successfully with a message indicating 0 comments were deleted
 4. **Given** a user posts "@github-actions /clear please remove old warnings", **When** the command is processed, **Then** the action recognizes the `/clear` command despite additional text and deletes all bot comments
+5. **Given** a PR has bot comments, **When** a user posts "@github-actions /CLEAR" or "@github-actions /Clear", **Then** the command is recognized (case-insensitive) and all bot comments are deleted
 
 ---
 
@@ -87,7 +90,7 @@ As a user who runs the clear command, I want to receive feedback about what was 
 
 ### Functional Requirements
 
-- **FR-001**: System MUST detect when a PR comment mentions the github-actions bot with the `/clear` command
+- **FR-001**: System MUST detect when a PR comment mentions the github-actions bot with the `/clear` command (case-insensitive: `/clear`, `/Clear`, `/CLEAR`, etc.)
 - **FR-002**: System MUST identify all comments on the PR that were created by the gitleaks-diff-comment bot (using the invisible marker or API author filtering)
 - **FR-003**: System MUST delete all identified bot comments from the PR when the `/clear` command is authorized
 - **FR-004**: System MUST verify the requesting user has appropriate permissions (PR author, write collaborator, or maintainer) before executing the clear command
@@ -98,6 +101,7 @@ As a user who runs the clear command, I want to receive feedback about what was 
 - **FR-009**: System MUST log the clear operation including who requested it, when, and how many comments were deleted
 - **FR-010**: System MUST use the existing GitHub token permissions (pull_requests:write) to delete comments
 - **FR-011**: System MUST retry comment deletion operations with exponential backoff (up to 3 attempts) when GitHub API rate limits are exceeded, then fail with a descriptive error message if all retries are exhausted
+- **FR-012**: System MUST track execution count metric for operational monitoring of the clear command feature
 
 ### Key Entities
 
