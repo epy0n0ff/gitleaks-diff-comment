@@ -128,7 +128,8 @@ func (c *Config) Validate() error {
 			"  → Action: Check GITHUB_REPOSITORY environment variable\n"+
 			"  → Expected format: owner/repository-name", c.Repository)
 	}
-	if c.CommitSHA == "" {
+	// CommitSHA is only required in normal mode (not in command mode)
+	if !c.IsCommandMode() && c.CommitSHA == "" {
 		return errors.New("commit SHA is required (GITHUB_SHA)\n" +
 			"  → Action: This is automatically set by GitHub Actions\n" +
 			"  → Ensure the action is running in a GitHub Actions workflow")

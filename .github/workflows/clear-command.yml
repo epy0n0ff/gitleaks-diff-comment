@@ -22,32 +22,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.25'
-
       - name: Execute clear command
         id: clear
-        run: |
-          go run ./cmd/gitleaks-diff-comment
-        env:
-          # GitHub Actions automatically provides GITHUB_TOKEN
-          INPUT_GITHUB-TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-          # Repository information
-          GITHUB_REPOSITORY: ${{ github.repository }}
-
-          # PR number from issue
-          INPUT_PR-NUMBER: ${{ github.event.issue.number }}
-
-          # Command information
-          INPUT_COMMAND: clear
-          INPUT_COMMENT-ID: ${{ github.event.comment.id }}
-          INPUT_REQUESTER: ${{ github.event.comment.user.login }}
-
+        uses: ./
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-number: ${{ github.event.issue.number }}
+          command: clear
+          comment-id: ${{ github.event.comment.id }}
+          requester: ${{ github.event.comment.user.login }}
           # Enterprise Server support (optional)
-          # INPUT_GH-HOST: github.company.com
+          # gh-host: github.company.com
 
       - name: Add job summary
         if: always()

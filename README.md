@@ -74,7 +74,7 @@ You can clear all bot-generated comments from a PR by posting a comment with the
 @github-actions /clear
 ```
 
-**Setup**: Create `.github/workflows/clear-command.yml`:
+**Setup**: Create `.github/workflows/clear-command.yml` on your default branch (main):
 
 ```yaml
 name: Clear Comments Command
@@ -95,21 +95,17 @@ jobs:
       issues: write
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: ./
         with:
-          go-version: '1.25'
-      - name: Execute clear command
-        run: go run ./cmd/gitleaks-diff-comment
-        env:
-          INPUT_GITHUB-TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          INPUT_PR-NUMBER: ${{ github.event.issue.number }}
-          INPUT_COMMAND: clear
-          INPUT_COMMENT-ID: ${{ github.event.comment.id }}
-          INPUT_REQUESTER: ${{ github.event.comment.user.login }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-number: ${{ github.event.issue.number }}
+          command: clear
+          comment-id: ${{ github.event.comment.id }}
+          requester: ${{ github.event.comment.user.login }}
 ```
 
 **Requirements**:
+- **IMPORTANT**: The workflow file must exist on your default branch (main) for `issue_comment` events to work
 - User must have write, admin, or maintain access to the repository
 - Only deletes comments created by this action (identified by invisible markers)
 - Preserves all human-written comments
@@ -248,6 +244,10 @@ If rate limits persist, the action fails gracefully without blocking the PR work
 **Symptom**: Posting `@github-actions /clear` comment doesn't trigger the workflow
 
 **Solutions**:
+- **MOST COMMON**: Ensure clear-command.yml workflow file exists on the **default branch (main/master)**
+  - `issue_comment` events only trigger workflows from the default branch
+  - Feature branch workflows will NOT trigger on issue comments
+  - Solution: Merge the workflow file to main branch first
 - Ensure clear-command.yml workflow file exists in `.github/workflows/`
 - Verify workflow has correct permissions: `pull-requests: write`, `issues: write`
 - Check workflow `if` condition includes all required checks
