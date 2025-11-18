@@ -29,6 +29,18 @@ inputs:
     description: 'GitHub Enterprise Server hostname (e.g., github.company.com). Leave empty for GitHub.com.'
     required: false
     default: ''
+  command:
+    description: 'Command to execute (e.g., "clear" to delete bot comments). Leave empty for normal diff commenting mode.'
+    required: false
+    default: ''
+  comment-id:
+    description: 'Comment ID that triggered the command (for clear command)'
+    required: false
+    default: ''
+  requester:
+    description: 'GitHub username who requested the command (for permission checking)'
+    required: false
+    default: ''
 
 outputs:
   posted:
