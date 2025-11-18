@@ -156,11 +156,25 @@ func postCommentsConcurrently(ctx context.Context, client Client, comments []*co
 			semaphore <- struct{}{}
 			defer func() { <-semaphore }()
 
-			// Check for existing comment at this location
+			// Check for existing comment with same content
 			existingComment := findExistingComment(comm, existingComments)
 
 			if commentMode == "override" && existingComment != nil {
-				// Override mode: update existing comment
+				// Check if line number has changed
+				if existingComment.Line != comm.Line {
+					// Line has shifted - delete old comment and post new one at correct line
+					if debug {
+						log.Printf("[%d/%d] Line shifted (%d → %d), replacing comment", idx+1, len(comments), existingComment.Line, comm.Line)
+					}
+					// Delete old comment (best effort, ignore errors)
+					_ = client.DeleteReviewComment(ctx, existingComment.ID)
+					// Post new comment at correct line
+					result := postCommentWithRetry(ctx, client, comm, debug, idx+1, len(comments))
+					resultChan <- result
+					return
+				}
+
+				// Same line - update existing comment body
 				if debug {
 					log.Printf("[%d/%d] Updating existing comment at line %d (%s)", idx+1, len(comments), comm.Line, comm.Side)
 				}
@@ -305,7 +319,8 @@ func findExistingComment(newComment *comment.GeneratedComment, existingComments 
 }
 
 // extractMarker extracts the marker from comment body
-// Marker format: <!-- gitleaks-diff-comment: {path}:{line}:{side} -->
+// Marker format: <!-- gitleaks-diff-comment: {path}:{content}:{side} -->
+// Content is the actual gitleaks pattern (e.g., "secret.txt" or "*.env")
 func extractMarker(body string) string {
 	start := strings.Index(body, "<!-- gitleaks-diff-comment: ")
 	if start == -1 {

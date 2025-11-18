@@ -55,8 +55,10 @@ func NewGeneratedComment(change *diff.DiffChange, repo, commitSHA, ghHost string
 	}
 
 	// Add invisible marker for comment identification (for override mode)
-	// Format: <!-- gitleaks-diff-comment: {path}:{line}:{side} -->
-	marker := fmt.Sprintf("<!-- gitleaks-diff-comment: %s:%d:%s -->", ".gitleaksignore", line, side)
+	// Format: <!-- gitleaks-diff-comment: {path}:{content}:{side} -->
+	// Use content instead of line number to handle line shifts when file changes
+	contentID := change.Content // Use the actual gitleaks pattern as identifier
+	marker := fmt.Sprintf("<!-- gitleaks-diff-comment: %s:%s:%s -->", ".gitleaksignore", contentID, side)
 	bodyWithMarker := marker + "\n" + body
 
 	return &GeneratedComment{
