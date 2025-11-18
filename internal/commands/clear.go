@@ -136,19 +136,28 @@ func (c *ClearCommand) Execute(ctx context.Context) error {
 		return nil
 	}
 
-	// Delete each bot comment
+	// Delete each bot comment with retry logic
 	for _, comment := range botComments {
 		commentID := comment.GetID()
 
-		err := c.Client.DeleteComment(ctx, commentID)
+		// Use retry with backoff for rate limit handling
+		retries, err := c.deleteCommentWithRetry(ctx, commentID)
+
+		// Track total retry attempts
+		c.Operation.RetryCount += retries
+
 		if err != nil {
 			// Log error but continue with other comments
-			errMsg := fmt.Sprintf("Failed to delete comment %d: %v", commentID, err)
+			errMsg := fmt.Sprintf("Failed to delete comment %d after %d retries: %v", commentID, retries, err)
 			log.Printf("::warning::%s", errMsg)
 			c.Operation.Errors = append(c.Operation.Errors, errMsg)
 			c.Operation.CommentsFailed++
 		} else {
-			log.Printf("::notice::Deleted comment %d", commentID)
+			if retries > 0 {
+				log.Printf("::notice::Deleted comment %d (after %d retries)", commentID, retries)
+			} else {
+				log.Printf("::notice::Deleted comment %d", commentID)
+			}
 			c.Operation.CommentsDeleted++
 		}
 	}
@@ -199,4 +208,25 @@ func (c *ClearCommand) logMetricsOnError() {
 	if err := logMetrics(event); err != nil {
 		log.Printf("::warning::Failed to log metrics: %v", err)
 	}
+}
+
+// deleteCommentWithRetry deletes a comment with exponential backoff retry
+// Returns (retryAttempts, error)
+func (c *ClearCommand) deleteCommentWithRetry(ctx context.Context, commentID int64) (int, error) {
+	maxRetries := 3
+
+	retries, err := github.RetryWithBackoff(func() error {
+		return c.Client.DeleteComment(ctx, commentID)
+	}, maxRetries)
+
+	// Log retry attempts if any occurred
+	if retries > 0 {
+		if err != nil {
+			log.Printf("::warning::Rate limit encountered for comment %d, failed after %d retries", commentID, retries)
+		} else {
+			log.Printf("::notice::Rate limit encountered for comment %d, succeeded after %d retries", commentID, retries)
+		}
+	}
+
+	return retries, err
 }

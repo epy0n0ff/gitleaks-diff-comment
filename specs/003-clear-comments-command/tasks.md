@@ -136,11 +136,11 @@ This is a single Go project with the following structure:
 
 **Purpose**: Implement exponential backoff retry for rate limits and robust error handling
 
-- [ ] T043 [P] Create retry.go with retryWithBackoff function implementing exponential backoff in /workspace/internal/github/retry.go
-- [ ] T044 [P] Implement isRateLimitError helper function to detect rate limit errors in /workspace/internal/github/retry.go
-- [ ] T045 [P] Add jitter calculation to retry delays (0-50% of base delay) in /workspace/internal/github/retry.go
-- [ ] T046 Update ClearCommand to use retryWithBackoff for comment deletions in /workspace/internal/commands/clear.go
-- [ ] T047 Add retry attempt counter and logging for each retry in /workspace/internal/commands/clear.go
+- [x] T043 [P] Create retry.go with retryWithBackoff function implementing exponential backoff in /workspace/internal/github/retry.go
+- [x] T044 [P] Implement isRateLimitError helper function to detect rate limit errors in /workspace/internal/github/retry.go
+- [x] T045 [P] Add jitter calculation to retry delays (0-50% of base delay) in /workspace/internal/github/retry.go
+- [x] T046 Update ClearCommand to use retryWithBackoff for comment deletions in /workspace/internal/commands/clear.go
+- [x] T047 Add retry attempt counter and logging for each retry in /workspace/internal/commands/clear.go
 - [ ] T048 [P] Add unit tests for retry logic with mocked rate limit errors in /workspace/tests/unit/commands/retry_test.go
 - [ ] T049 [P] Add integration test for rate limit scenario with mocked GitHub API in /workspace/tests/integration/rate_limit_test.go
 
