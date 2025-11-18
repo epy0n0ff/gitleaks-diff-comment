@@ -157,17 +157,23 @@ func postCommentsConcurrently(ctx context.Context, client Client, comments []*co
 			defer func() { <-semaphore }()
 
 			// Check for existing comment with same content
+			log.Printf("DEBUG: [%d/%d] Checking for existing comment (Line=%d, Side=%s)", idx+1, len(comments), comm.Line, comm.Side)
 			existingComment := findExistingComment(comm, existingComments)
 
 			if commentMode == "override" && existingComment != nil {
+				log.Printf("DEBUG: [%d/%d] Found existing comment (ID=%d, Line=%d)", idx+1, len(comments), existingComment.ID, existingComment.Line)
 				// Check if line number has changed
 				if existingComment.Line != comm.Line {
 					// Line has shifted - delete old comment and post new one at correct line
+					log.Printf("::warning::[%d/%d] Line shifted (%d → %d), replacing comment", idx+1, len(comments), existingComment.Line, comm.Line)
 					if debug {
-						log.Printf("[%d/%d] Line shifted (%d → %d), replacing comment", idx+1, len(comments), existingComment.Line, comm.Line)
+						log.Printf("[%d/%d] Deleting old comment ID=%d at line %d", idx+1, len(comments), existingComment.ID, existingComment.Line)
 					}
 					// Delete old comment (best effort, ignore errors)
-					_ = client.DeleteReviewComment(ctx, existingComment.ID)
+					deleteErr := client.DeleteReviewComment(ctx, existingComment.ID)
+					if deleteErr != nil && debug {
+						log.Printf("DEBUG: Failed to delete comment %d: %v", existingComment.ID, deleteErr)
+					}
 					// Post new comment at correct line
 					result := postCommentWithRetry(ctx, client, comm, debug, idx+1, len(comments))
 					resultChan <- result
@@ -175,12 +181,19 @@ func postCommentsConcurrently(ctx context.Context, client Client, comments []*co
 				}
 
 				// Same line - update existing comment body
+				log.Printf("DEBUG: [%d/%d] Same line, updating comment body", idx+1, len(comments))
 				if debug {
 					log.Printf("[%d/%d] Updating existing comment at line %d (%s)", idx+1, len(comments), comm.Line, comm.Side)
 				}
 				result := updateCommentWithRetry(ctx, client, comm, existingComment.ID, debug, idx+1, len(comments))
 				resultChan <- result
 				return
+			}
+
+			if existingComment == nil {
+				log.Printf("DEBUG: [%d/%d] No existing comment found, posting new comment", idx+1, len(comments))
+			} else {
+				log.Printf("DEBUG: [%d/%d] Comment mode is '%s', not 'override'", idx+1, len(comments), commentMode)
 			}
 
 			if commentMode == "append" && existingComment != nil {
@@ -305,16 +318,23 @@ func findExistingComment(newComment *comment.GeneratedComment, existingComments 
 	// Extract marker from new comment body
 	marker := extractMarker(newComment.Body)
 	if marker == "" {
+		log.Printf("DEBUG: No marker found in new comment body")
 		return nil
 	}
 
+	log.Printf("DEBUG: Looking for existing comment with marker: %s", marker)
+	log.Printf("DEBUG: Checking %d existing comments", len(existingComments))
+
 	// Find comment with matching marker
-	for _, existing := range existingComments {
-		if extractMarker(existing.Body) == marker {
+	for i, existing := range existingComments {
+		existingMarker := extractMarker(existing.Body)
+		if existingMarker == marker {
+			log.Printf("DEBUG: Found matching comment at index %d (ID=%d, Line=%d)", i, existing.ID, existing.Line)
 			return existing
 		}
 	}
 
+	log.Printf("DEBUG: No matching comment found for marker: %s", marker)
 	return nil
 }
 
