@@ -116,6 +116,9 @@ func (c *ClearCommand) Execute(ctx context.Context) error {
 	if err != nil {
 		c.Operation.Status = "failed"
 		c.Operation.Errors = append(c.Operation.Errors, err.Error())
+		c.finalize()
+		c.logMetricsOnError()
+		log.Printf("::error::Failed to fetch comments: %v", err)
 		return fmt.Errorf("failed to fetch comments: %w", err)
 	}
 
@@ -128,6 +131,7 @@ func (c *ClearCommand) Execute(ctx context.Context) error {
 	if len(botComments) == 0 {
 		c.Operation.Status = "completed"
 		c.finalize()
+		c.logMetricsOnCompletion()
 		log.Println("::notice::No bot comments found to delete")
 		return nil
 	}
@@ -158,6 +162,9 @@ func (c *ClearCommand) Execute(ctx context.Context) error {
 
 	c.finalize()
 
+	// Log metrics
+	c.logMetricsOnCompletion()
+
 	// Report results
 	if c.Operation.CommentsFailed > 0 {
 		log.Printf("::notice::✓ Cleared %d comments with %d failures in %.2fs",
@@ -175,4 +182,21 @@ func (c *ClearCommand) Execute(ctx context.Context) error {
 func (c *ClearCommand) finalize() {
 	c.Operation.CompletedAt = time.Now()
 	c.Operation.Duration = c.Operation.CompletedAt.Sub(c.Operation.StartedAt).Seconds()
+}
+
+// logMetricsOnCompletion logs metrics for successful or partially successful operations
+func (c *ClearCommand) logMetricsOnCompletion() {
+	event := NewMetricsEvent(c.Operation)
+	if err := logMetrics(event); err != nil {
+		log.Printf("::warning::Failed to log metrics: %v", err)
+	}
+}
+
+// logMetricsOnError logs metrics for failed operations
+func (c *ClearCommand) logMetricsOnError() {
+	event := NewMetricsEvent(c.Operation)
+	event.Success = false
+	if err := logMetrics(event); err != nil {
+		log.Printf("::warning::Failed to log metrics: %v", err)
+	}
 }

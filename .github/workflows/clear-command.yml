@@ -28,6 +28,7 @@ jobs:
           go-version: '1.25'
 
       - name: Execute clear command
+        id: clear
         run: |
           go run ./cmd/gitleaks-diff-comment
         env:
@@ -47,3 +48,13 @@ jobs:
 
           # Enterprise Server support (optional)
           # INPUT_GH-HOST: github.company.com
+
+      - name: Add job summary
+        if: always()
+        run: |
+          echo "## Clear Comments Command Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**PR**: #${{ github.event.issue.number }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Requested by**: @${{ github.event.comment.user.login }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check the workflow logs above for detailed execution metrics." >> $GITHUB_STEP_SUMMARY

@@ -116,18 +116,18 @@ This is a single Go project with the following structure:
 
 ### Metrics and Logging
 
-- [ ] T033 [P] [US3] Create MetricsEvent struct matching contract schema in /workspace/internal/commands/metrics.go
-- [ ] T034 [P] [US3] Implement logMetrics function to output structured JSON in /workspace/internal/commands/metrics.go
-- [ ] T035 [US3] Add operation timing tracking (StartedAt, CompletedAt, Duration) to ClearOperation in /workspace/internal/commands/clear.go
-- [ ] T036 [US3] Add counter tracking (CommentsFound, CommentsDeleted, CommentsFailed) to ClearOperation in /workspace/internal/commands/clear.go
-- [ ] T037 [US3] Call logMetrics at end of ClearCommand.Execute with final counts in /workspace/internal/commands/clear.go
+- [x] T033 [P] [US3] Create MetricsEvent struct matching contract schema in /workspace/internal/commands/metrics.go
+- [x] T034 [P] [US3] Implement logMetrics function to output structured JSON in /workspace/internal/commands/metrics.go
+- [x] T035 [US3] Add operation timing tracking (StartedAt, CompletedAt, Duration) to ClearOperation in /workspace/internal/commands/clear.go
+- [x] T036 [US3] Add counter tracking (CommentsFound, CommentsDeleted, CommentsFailed) to ClearOperation in /workspace/internal/commands/clear.go
+- [x] T037 [US3] Call logMetrics at end of ClearCommand.Execute with final counts in /workspace/internal/commands/clear.go
 
 ### Workflow Output
 
-- [ ] T038 [US3] Add ::notice:: log statements for operation progress in /workspace/internal/commands/clear.go
-- [ ] T039 [US3] Add ::warning:: log statements for retry attempts in /workspace/internal/commands/clear.go
-- [ ] T040 [US3] Add ::error:: log statements for fatal errors in /workspace/internal/commands/clear.go
-- [ ] T041 [US3] Update workflow to capture and display output summary in /workspace/.github/workflows/clear-command.yml
+- [x] T038 [US3] Add ::notice:: log statements for operation progress in /workspace/internal/commands/clear.go
+- [x] T039 [US3] Add ::warning:: log statements for retry attempts in /workspace/internal/commands/clear.go
+- [x] T040 [US3] Add ::error:: log statements for fatal errors in /workspace/internal/commands/clear.go
+- [x] T041 [US3] Update workflow to capture and display output summary in /workspace/.github/workflows/clear-command.yml
 - [ ] T042 [P] [US3] Add integration test that verifies metrics output format in /workspace/tests/integration/metrics_test.go
 
 ---
