@@ -152,14 +152,14 @@ This is a single Go project with the following structure:
 
 - [ ] T050 [P] Add command detection for non-clear mentions with help message logic in /workspace/internal/commands/detector.go
 - [ ] T051 [P] Add validation for invalid command IDs and PR numbers in /workspace/internal/config/config.go
-- [ ] T052 [P] Update README.md with /clear command usage instructions and examples
-- [ ] T053 [P] Add troubleshooting section to README.md covering common errors (permissions, rate limits, etc.)
+- [x] T052 [P] Update README.md with /clear command usage instructions and examples
+- [x] T053 [P] Add troubleshooting section to README.md covering common errors (permissions, rate limits, etc.)
 - [ ] T054 Run all unit tests and verify 100% pass (go test ./internal/... ./cmd/...)
 - [ ] T055 Run all integration tests and verify pass (go test ./tests/integration/...)
 - [ ] T056 [P] Test workflow manually on test repository with real PR and bot comments
 - [ ] T057 [P] Verify concurrent clear command execution handling (multiple users posting /clear simultaneously)
 - [ ] T058 [P] Review all error messages for clarity and actionability per data-model.md specifications
-- [ ] T059 Update CHANGELOG.md with /clear command feature description and usage examples
+- [x] T059 Update CHANGELOG.md with /clear command feature description and usage examples
 
 ---
 

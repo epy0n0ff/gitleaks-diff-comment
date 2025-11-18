@@ -22,6 +22,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Works with custom ports (e.g., `github.company.com:8443`)
 
 ### Added
+- **/clear command for comment management** - Clear all bot comments from a PR with a simple command
+  - Post `@github-actions /clear` in any PR comment to remove all bot-generated comments
+  - Case-insensitive command detection (`/clear`, `/CLEAR`, `/Clear` all work)
+  - **Authorization**: Only users with write, admin, or maintain access can use this command
+  - **Safety**: Preserves all human-written comments, only deletes bot comments with markers
+  - **Retry logic**: Exponential backoff (2s, 4s, 8s) handles rate limits automatically
+  - **Observability**: Structured JSON metrics logged for monitoring and debugging
+  - **Workflow**: Separate `clear-command.yml` workflow triggered by issue_comment events
+  - **Performance**: Completes in <10 seconds for typical PRs (≤100 comments)
+  - **Example**: User posts `/clear` → Bot checks permissions → Identifies bot comments → Deletes with retry → Logs metrics
+- Command detection infrastructure with regex pattern matching
+- Permission verification using GitHub API GetPermissionLevel
+- Metrics event logging with structured JSON format (event_type, timestamp, counts, duration)
+- GitHub Actions annotations (::notice::, ::warning::, ::error::) for visibility
+- Job summary in workflow showing operation results
 - **GitHub Enterprise Server support** - Action now supports GitHub Enterprise Server (GHES) 3.14+ installations
   - New `gh-host` input parameter for enterprise hostname configuration (e.g., `github.company.com`)
   - Support for custom ports (e.g., `github.company.com:8443`)

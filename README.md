@@ -66,6 +66,59 @@ jobs:
 | `skipped_duplicates` | Number of duplicate comments skipped |
 | `errors` | Number of errors encountered |
 
+### Clear Comments Command
+
+You can clear all bot-generated comments from a PR by posting a comment with the `/clear` command:
+
+```
+@github-actions /clear
+```
+
+**Setup**: Create `.github/workflows/clear-command.yml`:
+
+```yaml
+name: Clear Comments Command
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  clear:
+    if: |
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '@github-actions') &&
+      contains(github.event.comment.body, '/clear')
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      - name: Execute clear command
+        run: go run ./cmd/gitleaks-diff-comment
+        env:
+          INPUT_GITHUB-TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          INPUT_PR-NUMBER: ${{ github.event.issue.number }}
+          INPUT_COMMAND: clear
+          INPUT_COMMENT-ID: ${{ github.event.comment.id }}
+          INPUT_REQUESTER: ${{ github.event.comment.user.login }}
+```
+
+**Requirements**:
+- User must have write, admin, or maintain access to the repository
+- Only deletes comments created by this action (identified by invisible markers)
+- Preserves all human-written comments
+
+**Usage examples**:
+- `@github-actions /clear` - Basic usage
+- `@github-actions /CLEAR` - Case-insensitive
+- `@github-actions /clear please remove old comments` - Additional text allowed
+
 ## Example Comments
 
 ### Addition Comment
@@ -179,6 +232,48 @@ If rate limits persist, the action fails gracefully without blocking the PR work
 - Verify `pr-number` input: `${{ github.event.pull_request.number }}`
 - Check that action is running in pull_request event context
 - Review error message for specific guidance on missing configuration
+
+#### Clear command permission denied
+
+**Symptom**: `/clear` command responds with "Permission denied: User does not have required permissions"
+
+**Solutions**:
+- Verify you have write, admin, or maintain access to the repository
+- Check repository collaborator settings
+- PR authors automatically have permission on their own PRs
+- External contributors with read-only access cannot use this command
+
+#### Clear command not triggering
+
+**Symptom**: Posting `@github-actions /clear` comment doesn't trigger the workflow
+
+**Solutions**:
+- Ensure clear-command.yml workflow file exists in `.github/workflows/`
+- Verify workflow has correct permissions: `pull-requests: write`, `issues: write`
+- Check workflow `if` condition includes all required checks
+- Command is case-insensitive: `/clear`, `/CLEAR`, `/Clear` all work
+- Must mention `@github-actions` before the command
+
+#### No comments cleared
+
+**Symptom**: Clear command runs but reports 0 comments cleared
+
+**Solutions**:
+- Verify bot comments exist on the PR (check for comments with gitleaks exclusion markers)
+- Only comments created by this action are deleted (identified by invisible markers)
+- Human comments are always preserved
+- Check workflow logs for "Found N bot comments to delete" message
+
+#### Rate limit errors during clear
+
+**Symptom**: "Rate limit exceeded after 3 retries" in clear command logs
+
+**Solutions**:
+- Action automatically retries with exponential backoff (2s, 4s, 8s)
+- Maximum 3 retry attempts per comment deletion
+- If many comments (50+), rate limits may be hit
+- Wait for rate limit reset (check X-RateLimit-Reset header in logs)
+- Re-run the command after rate limit resets
 
 #### Docker build failures
 
